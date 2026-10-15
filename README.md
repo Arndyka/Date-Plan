@@ -2,7 +2,7 @@
 
 A little plan, a lot of love. Date planner berbahasa Indonesia untuk dua orang, dengan tema cream–blush, ilustrasi piknik, dan animasi lembut.
 
-Target publikasi: **https://arndyka.github.io/Date-Plan/**. Status deployment aktual dapat dilihat pada tab Actions repository.
+Website: **https://arndyka.github.io/Date-Plan/**. Deployment pertama berhasil pada 15 Oktober 2026 melalui [GitHub Actions](https://github.com/Arndyka/Date-Plan/actions/runs/38731357035). Saat ini tersedia demo lokal; sinkronisasi pasangan menunggu konfigurasi dan migrasi Supabase.
 
 ## Fitur
 

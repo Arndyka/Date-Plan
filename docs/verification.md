@@ -25,7 +25,8 @@ Verified commands after review fixes: `npm test` — 17 passed; `npm run build` 
 
 - Supabase Project URL and publishable key have not yet been supplied. The connector was discovered but its connection has not been confirmed.
 - Remote migration, email delivery, password recovery, two real accounts, actual Realtime transport, and simultaneous transactions across server connections therefore remain unverified. PGlite proves database behavior in one local PostgreSQL instance; it is not an external account test or a concurrent-session test.
-- Deployment and live-URL smoke results will be recorded after the GitHub workflow completes.
+- GitHub Pages deployment succeeded on 15 October 2026: [workflow run](https://github.com/Arndyka/Date-Plan/actions/runs/38731357035), source commit `620e6d9`. The public URL `https://arndyka.github.io/Date-Plan/` returned HTTP 200 with the expected app title. The deployed configuration currently supports the local demo; Supabase has not been activated.
+- All **24 browser tests passed against the public GitHub Pages URL** in one run (1.0 minute, two workers), covering desktop and mobile. Production screenshots were visually inspected at both sizes. This confirms the deployed frontend and demo behavior, not private cloud synchronization.
 
 ## Review decisions
 
