@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Plus,
   ArrowLeft,
@@ -44,6 +44,8 @@ import {
 } from '../components/UI';
 import PicnicArt from '../components/PicnicArt';
 const opts = (values: string[]) => values.map((x) => ({ value: x, label: x }));
+const deletedDraftMessage =
+  'Rencana ini sudah dihapus. Salin isian yang ingin kamu simpan sebelum menutup formulir.';
 export function PlanEditor({
   row,
   initial = {},
@@ -55,7 +57,10 @@ export function PlanEditor({
   onClose: () => void;
   onSaved?: (p: Row<'plans'>) => void;
 }) {
-  const { save } = useSpace();
+  const { save, snapshot } = useSpace();
+  // Keep the edit-start version even when a background refresh replaces the live row.
+  const [editingRow] = useState(row);
+  const deleted = !!editingRow && !snapshot!.tables.plans.some((p) => p.id === editingRow.id);
   const defaults: PlanData = {
     title: '',
     date: today(),
@@ -68,7 +73,7 @@ export function PlanEditor({
     note: '',
     rain: '',
     ...initial,
-    ...row?.data,
+    ...editingRow?.data,
   };
   const fields: FieldSpec[] = [
     { name: 'title', label: 'Judul date', required: true, wide: true },
@@ -98,21 +103,24 @@ export function PlanEditor({
   return (
     <FormDialog
       title={row ? 'Rapikan rencana kita' : 'Satu date baru, satu cerita baru'}
-      fields={fields}
+      fields={fields.filter((f) => f.name !== 'share' || snapshot!.members.length === 2)}
       initial={defaults as unknown as Record<string, unknown>}
       submit="Simpan rencana"
       onClose={onClose}
       onSubmit={async (v) => {
-        const data = v as unknown as PlanData;
+        if (deleted) throw new Error(deletedDraftMessage);
+        const data = { ...defaults, ...v } as PlanData;
         parseRupiah(String(data.budget));
         validateSchedule(
           jakartaInstant(data.date, data.start),
           jakartaInstant(data.date, data.end),
         );
-        const saved = await save('plans', data, row);
+        const saved = await save('plans', data, editingRow);
         onSaved?.(saved);
       }}
-    />
+    >
+      {deleted && <p className="info-note">{deletedDraftMessage}</p>}
+    </FormDialog>
   );
 }
 export function PlanCard({ plan }: { plan: Row<'plans'> }) {
@@ -211,6 +219,7 @@ function ActivityEditor({
   onClose: () => void;
 }) {
   const { save, snapshot } = useSpace();
+  const deleted = !snapshot!.tables.plans.some((p) => p.id === plan.id);
   const count = snapshot!.tables.activities.filter((x) => x.plan_id === plan.id).length,
     first = snapshot!.members[0]?.nickname ?? 'kamu';
   const initial: ActivityData = {
@@ -251,11 +260,12 @@ function ActivityEditor({
   return (
     <FormDialog
       title={row ? 'Edit momen kecil' : 'Tambah kegiatan'}
-      fields={fields}
+      fields={fields.filter((f) => f.name !== 'paidFirst' || snapshot!.members.length === 2)}
       initial={initial as unknown as Record<string, unknown>}
       submit="Simpan kegiatan"
       onClose={onClose}
       onSubmit={async (v) => {
+        if (deleted) throw new Error(deletedDraftMessage);
         const data = { ...initial, ...v } as ActivityData;
         validateSchedule(
           jakartaInstant(plan.data.date, data.start),
@@ -267,12 +277,15 @@ function ActivityEditor({
           throw new Error('Gunakan tautan Google Maps HTTPS yang valid.');
         await save('activities', data, row, { plan_id: plan.id });
       }}
-    />
+    >
+      {deleted && <p className="info-note">{deletedDraftMessage}</p>}
+    </FormDialog>
   );
 }
 export function PlanDetail({ id }: { id: string }) {
   const { snapshot, save, remove, act, toast } = useSpace();
-  const plan = snapshot!.tables.plans.find((x) => x.id === id);
+  const livePlan = snapshot!.tables.plans.find((x) => x.id === id);
+  const lastPlan = useRef(livePlan);
   const [edit, setEdit] = useState(false),
     [activity, setActivity] = useState<Row<'activities'> | true | null>(null),
     [deleting, setDeleting] = useState<{
@@ -282,6 +295,10 @@ export function PlanDetail({ id }: { id: string }) {
     [celebrate, setCelebrate] = useState(false),
     [checkText, setCheckText] = useState(''),
     [checkEdit, setCheckEdit] = useState<Row<'checklist_items'> | null>(null);
+  useEffect(() => {
+    if (livePlan) lastPlan.current = livePlan;
+  }, [livePlan]);
+  const plan = livePlan ?? (edit || activity || checkEdit ? lastPlan.current : undefined);
   useEffect(() => {
     if (celebrate) {
       const timer = setTimeout(() => setCelebrate(false), 2500);
@@ -344,291 +361,297 @@ export function PlanDetail({ id }: { id: string }) {
   }
   return (
     <>
-      <a className="back-link" href="#/plans">
-        <ArrowLeft size={16} />
-        Semua rencana
-      </a>
-      <Heading
-        eyebrow="OUR LITTLE ITINERARY"
-        title={p.title}
-        description={`${prettyDate(p.date)} · ${p.start}–${p.end} WIB`}
-        action={
-          <div className="actions">
-            <button className="btn secondary" onClick={() => setEdit(true)}>
-              <Pencil size={15} />
-              Edit rencana
-            </button>
-            <button
-              className="icon-btn"
-              aria-label="Hapus rencana"
-              onClick={() => setDeleting({ kind: 'plans', row: plan })}
-            >
-              <Trash2 size={18} />
+      <div hidden={!livePlan}>
+        <a className="back-link" href="#/plans">
+          <ArrowLeft size={16} />
+          Semua rencana
+        </a>
+        <Heading
+          eyebrow="OUR LITTLE ITINERARY"
+          title={p.title}
+          description={`${prettyDate(p.date)} · ${p.start}–${p.end} WIB`}
+          action={
+            <div className="actions">
+              <button className="btn secondary" onClick={() => setEdit(true)}>
+                <Pencil size={15} />
+                Edit rencana
+              </button>
+              <button
+                className="icon-btn"
+                aria-label="Hapus rencana"
+                onClick={() => setDeleting({ kind: 'plans', row: plan })}
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          }
+        />
+        <div className="detail-intro">
+          <div>
+            <span className={`badge ${p.status === 'selesai' ? 'sage' : ''}`}>{p.status}</span>
+            <span className="muted">
+              <MapPin size={14} />
+              {p.location || 'Lokasi menyusul'}
+            </span>
+          </div>
+          <p>{p.note || 'Sedikit rencana untuk waktu yang berarti.'}</p>
+          <div className="actions wrap">
+            <External className="btn small secondary" href={googleCalendarUrl(cal)}>
+              <CalendarDays size={15} />
+              Save to Google Calendar
+            </External>
+            <button className="btn small secondary" onClick={download}>
+              <Download size={15} />
+              Unduh kalender
             </button>
           </div>
-        }
-      />
-      <div className="detail-intro">
-        <div>
-          <span className={`badge ${p.status === 'selesai' ? 'sage' : ''}`}>{p.status}</span>
-          <span className="muted">
-            <MapPin size={14} />
-            {p.location || 'Lokasi menyusul'}
-          </span>
-        </div>
-        <p>{p.note || 'Sedikit rencana untuk waktu yang berarti.'}</p>
-        <div className="actions wrap">
-          <External className="btn small secondary" href={googleCalendarUrl(cal)}>
-            <CalendarDays size={15} />
-            Save to Google Calendar
-          </External>
-          <button className="btn small secondary" onClick={download}>
-            <Download size={15} />
-            Unduh kalender
-          </button>
-        </div>
-        <small className="muted">
-          Salinan kalender eksternal perlu disimpan ulang jika jadwal berubah.
-        </small>
-      </div>
-      <div className="stats-grid">
-        <div className="stat-card">
-          <span>
-            <Wallet size={16} />
-            Batas budget
-          </span>
-          <strong>{rupiah(p.budget)}</strong>
-          <small>untuk semua momen</small>
-        </div>
-        <div className="stat-card">
-          <span>Estimasi kegiatan</span>
-          <strong>{rupiah(money.estimated)}</strong>
-          <small>
-            {money.estimated > p.budget ? 'Estimasi melebihi budget' : 'rencana pengeluaran kita'}
+          <small className="muted">
+            Salinan kalender eksternal perlu disimpan ulang jika jadwal berubah.
           </small>
         </div>
-        <div className="stat-card">
-          <span>Sudah terpakai</span>
-          <strong data-testid="actual-total">{rupiah(money.actual)}</strong>
-          <small className={money.remaining < 0 ? 'over-budget' : ''}>
-            {money.remaining < 0 ? 'Lebih budget' : 'Sisa'} {rupiah(Math.abs(money.remaining))}
-          </small>
-        </div>
-      </div>
-      <div className="detail-grid">
-        <section className="panel">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">ONE MOMENT AT A TIME</p>
-              <h2>Rundown kita</h2>
-            </div>
-            <button className="btn small" onClick={() => setActivity(true)}>
-              <Plus size={15} />
-              Tambah kegiatan
-            </button>
+        <div className="stats-grid">
+          <div className="stat-card">
+            <span>
+              <Wallet size={16} />
+              Batas budget
+            </span>
+            <strong>{rupiah(p.budget)}</strong>
+            <small>untuk semua momen</small>
           </div>
-          {overlap && (
-            <p className="info-note">
-              Ada jam kegiatan yang tumpang tindih. Cek lagi supaya tidak terburu-buru, ya.
-            </p>
-          )}
-          {activities.length ? (
-            <div className="timeline">
-              {activities.map((a, i) => (
-                <article className={`timeline-item ${a.data.done ? 'done' : ''}`} key={a.id}>
-                  <div className="timeline-time">
-                    {a.data.start}
-                    <small>{a.data.end}</small>
-                  </div>
-                  <div className="timeline-mark">
-                    <Coffee size={17} />
-                  </div>
-                  <div className="timeline-body">
-                    <div className="row-between">
-                      <span className="tiny-label">{a.data.category}</span>
-                      <div className="actions">
-                        <button
-                          className="icon-btn"
-                          disabled={i === 0}
-                          aria-label={`Naikkan ${a.data.title}`}
-                          onClick={() => reorder(i, -1)}
-                        >
-                          <ArrowUp size={14} />
-                        </button>
-                        <button
-                          className="icon-btn"
-                          disabled={i === activities.length - 1}
-                          aria-label={`Turunkan ${a.data.title}`}
-                          onClick={() => reorder(i, 1)}
-                        >
-                          <ArrowDown size={14} />
-                        </button>
-                        <button
-                          className="icon-btn"
-                          aria-label={`Edit ${a.data.title}`}
-                          onClick={() => setActivity(a)}
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          className="icon-btn"
-                          aria-label={`Hapus ${a.data.title}`}
-                          onClick={() => setDeleting({ kind: 'activities', row: a })}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                    <h3>{a.data.title}</h3>
-                    {(a.data.place || a.data.address) && (
-                      <External
-                        className="place-link"
-                        href={
-                          safeMapsUrl(a.data.maps) ?? mapsUrl(`${a.data.place} ${a.data.address}`)
-                        }
-                      >
-                        <MapPin size={13} />
-                        {a.data.place || a.data.address}
-                        <ExternalLink size={12} />
-                      </External>
-                    )}
-                    <p>{a.data.note}</p>
-                    <div className="row-between">
-                      <span className="cost">
-                        {rupiah(a.data.estimate)} <small>estimasi</small>
-                      </span>
-                      <button
-                        className={`check-pill ${a.data.done ? 'checked' : ''}`}
-                        onClick={() =>
-                          act(() => save('activities', { ...a.data, done: !a.data.done }, a))
-                        }
-                      >
-                        <Check size={13} />
-                        {a.data.done ? 'Selesai' : 'Tandai selesai'}
-                      </button>
-                    </div>
-                    {(a.data.place || a.data.address) && (
-                      <External
-                        className="tiny-link"
-                        href={mapsUrl(`${a.data.place} ${a.data.address}`, true)}
-                      >
-                        Buka rute →
-                      </External>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <Empty title="Mulai dengan satu kegiatan.">
-              Ngopi, jalan sore, atau sesuatu yang baru?
-            </Empty>
-          )}
-        </section>
-        <aside className="detail-aside">
+          <div className="stat-card">
+            <span>Estimasi kegiatan</span>
+            <strong>{rupiah(money.estimated)}</strong>
+            <small>
+              {money.estimated > p.budget ? 'Estimasi melebihi budget' : 'rencana pengeluaran kita'}
+            </small>
+          </div>
+          <div className="stat-card">
+            <span>Sudah terpakai</span>
+            <strong data-testid="actual-total">{rupiah(money.actual)}</strong>
+            <small className={money.remaining < 0 ? 'over-budget' : ''}>
+              {money.remaining < 0 ? 'Lebih budget' : 'Sisa'} {rupiah(Math.abs(money.remaining))}
+            </small>
+          </div>
+        </div>
+        <div className="detail-grid">
           <section className="panel">
             <div className="section-head">
-              <h2>Bawa apa, ya?</h2>
-              <CheckCircle2 size={19} />
-            </div>
-            <p className="muted small-copy">
-              {checks.filter((x) => x.data.done).length} dari {checks.length} sudah siap
-            </p>
-            <div className="checklist">
-              {checks.map((c) => (
-                <div key={c.id}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={c.data.done}
-                      onChange={() =>
-                        act(() => save('checklist_items', { ...c.data, done: !c.data.done }, c))
-                      }
-                    />
-                    <span className={c.data.done ? 'strike' : ''}>
-                      {c.data.title}
-                      {c.data.assignee && (
-                        <small className="assignee-name">
-                          {snapshot!.members.find((m) => m.user_id === c.data.assignee)?.nickname}
-                        </small>
-                      )}
-                    </span>
-                  </label>
-                  <button
-                    className="icon-btn"
-                    aria-label={`Edit ${c.data.title}`}
-                    onClick={() => setCheckEdit(c)}
-                  >
-                    <Pencil size={13} />
-                  </button>
-                  <button
-                    className="icon-btn"
-                    aria-label={`Hapus ${c.data.title}`}
-                    onClick={() => setDeleting({ kind: 'checklist_items', row: c })}
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <form
-              className="inline-form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (checkText.trim())
-                  act(async () => {
-                    await save(
-                      'checklist_items',
-                      { title: checkText.trim(), done: false, assignee: '' },
-                      undefined,
-                      { plan_id: id },
-                    );
-                    setCheckText('');
-                  });
-              }}
-            >
-              <input
-                aria-label="Barang atau tugas baru"
-                placeholder="Tambah barang kecil…"
-                value={checkText}
-                maxLength={160}
-                onChange={(e) => setCheckText(e.target.value)}
-                required
-              />
-              <button className="icon-btn filled" aria-label="Tambah checklist">
-                <Plus size={18} />
+              <div>
+                <p className="eyebrow">ONE MOMENT AT A TIME</p>
+                <h2>Rundown kita</h2>
+              </div>
+              <button className="btn small" onClick={() => setActivity(true)}>
+                <Plus size={15} />
+                Tambah kegiatan
               </button>
-            </form>
-          </section>
-          <section className="panel sage-panel">
-            <div className="section-head">
-              <h2>Patungan manis</h2>
-              <Wallet size={18} />
             </div>
-            <div className="split-people">
-              {snapshot!.members.map((m, i) => (
-                <div key={m.user_id}>
-                  <span>{m.nickname.slice(0, 1)}</span>
-                  <b>{m.nickname}</b>
-                  <small>{i === 0 ? p.share : 100 - p.share}%</small>
+            {overlap && (
+              <p className="info-note">
+                Ada jam kegiatan yang tumpang tindih. Cek lagi supaya tidak terburu-buru, ya.
+              </p>
+            )}
+            {activities.length ? (
+              <div className="timeline">
+                {activities.map((a, i) => (
+                  <article className={`timeline-item ${a.data.done ? 'done' : ''}`} key={a.id}>
+                    <div className="timeline-time">
+                      {a.data.start}
+                      <small>{a.data.end}</small>
+                    </div>
+                    <div className="timeline-mark">
+                      <Coffee size={17} />
+                    </div>
+                    <div className="timeline-body">
+                      <div className="row-between">
+                        <span className="tiny-label">{a.data.category}</span>
+                        <div className="actions">
+                          <button
+                            className="icon-btn"
+                            disabled={i === 0}
+                            aria-label={`Naikkan ${a.data.title}`}
+                            onClick={() => reorder(i, -1)}
+                          >
+                            <ArrowUp size={14} />
+                          </button>
+                          <button
+                            className="icon-btn"
+                            disabled={i === activities.length - 1}
+                            aria-label={`Turunkan ${a.data.title}`}
+                            onClick={() => reorder(i, 1)}
+                          >
+                            <ArrowDown size={14} />
+                          </button>
+                          <button
+                            className="icon-btn"
+                            aria-label={`Edit ${a.data.title}`}
+                            onClick={() => setActivity(a)}
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            className="icon-btn"
+                            aria-label={`Hapus ${a.data.title}`}
+                            onClick={() => setDeleting({ kind: 'activities', row: a })}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                      <h3>{a.data.title}</h3>
+                      {(a.data.place || a.data.address) && (
+                        <External
+                          className="place-link"
+                          href={
+                            safeMapsUrl(a.data.maps) ?? mapsUrl(`${a.data.place} ${a.data.address}`)
+                          }
+                        >
+                          <MapPin size={13} />
+                          {a.data.place || a.data.address}
+                          <ExternalLink size={12} />
+                        </External>
+                      )}
+                      <p>{a.data.note}</p>
+                      <div className="row-between">
+                        <span className="cost">
+                          {rupiah(a.data.estimate)} <small>estimasi</small>
+                        </span>
+                        <button
+                          className={`check-pill ${a.data.done ? 'checked' : ''}`}
+                          onClick={() =>
+                            act(() => save('activities', { ...a.data, done: !a.data.done }, a))
+                          }
+                        >
+                          <Check size={13} />
+                          {a.data.done ? 'Selesai' : 'Tandai selesai'}
+                        </button>
+                      </div>
+                      {(a.data.place || a.data.address) && (
+                        <External
+                          className="tiny-link"
+                          href={mapsUrl(`${a.data.place} ${a.data.address}`, true)}
+                        >
+                          Buka rute →
+                        </External>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <Empty title="Mulai dengan satu kegiatan.">
+                Ngopi, jalan sore, atau sesuatu yang baru?
+              </Empty>
+            )}
+          </section>
+          <aside className="detail-aside">
+            <section className="panel">
+              <div className="section-head">
+                <h2>Bawa apa, ya?</h2>
+                <CheckCircle2 size={19} />
+              </div>
+              <p className="muted small-copy">
+                {checks.filter((x) => x.data.done).length} dari {checks.length} sudah siap
+              </p>
+              <div className="checklist">
+                {checks.map((c) => (
+                  <div key={c.id}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={c.data.done}
+                        onChange={() =>
+                          act(() => save('checklist_items', { ...c.data, done: !c.data.done }, c))
+                        }
+                      />
+                      <span className={c.data.done ? 'strike' : ''}>
+                        {c.data.title}
+                        {c.data.assignee && (
+                          <small className="assignee-name">
+                            {snapshot!.members.find((m) => m.user_id === c.data.assignee)?.nickname}
+                          </small>
+                        )}
+                      </span>
+                    </label>
+                    <button
+                      className="icon-btn"
+                      aria-label={`Edit ${c.data.title}`}
+                      onClick={() => setCheckEdit(c)}
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      className="icon-btn"
+                      aria-label={`Hapus ${c.data.title}`}
+                      onClick={() => setDeleting({ kind: 'checklist_items', row: c })}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <form
+                className="inline-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (checkText.trim())
+                    act(async () => {
+                      await save(
+                        'checklist_items',
+                        { title: checkText.trim(), done: false, assignee: '' },
+                        undefined,
+                        { plan_id: id },
+                      );
+                      setCheckText('');
+                    });
+                }}
+              >
+                <input
+                  aria-label="Barang atau tugas baru"
+                  placeholder="Tambah barang kecil…"
+                  value={checkText}
+                  maxLength={160}
+                  onChange={(e) => setCheckText(e.target.value)}
+                  required
+                />
+                <button className="icon-btn filled" aria-label="Tambah checklist">
+                  <Plus size={18} />
+                </button>
+              </form>
+            </section>
+            <section className="panel sage-panel">
+              <div className="section-head">
+                <h2>Patungan manis</h2>
+                <Wallet size={18} />
+              </div>
+              {snapshot!.members.length === 2 && (
+                <div className="split-people">
+                  {snapshot!.members.map((m, i) => (
+                    <div key={m.user_id}>
+                      <span>{m.nickname.slice(0, 1)}</span>
+                      <b>{m.nickname}</b>
+                      <small>{i === 0 ? p.share : 100 - p.share}%</small>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <p className="small-copy">
-              {!money.actual
-                ? 'Catat pengeluaran aktual di kegiatan untuk melihat pembagiannya.'
-                : money.firstOwesSecond === 0
-                  ? 'Sudah pas, sama-sama beres ♡'
-                  : `${snapshot!.members[money.firstOwesSecond > 0 ? 0 : 1]?.nickname ?? 'Pasangan'} perlu mengganti ${rupiah(Math.abs(money.firstOwesSecond))} ke ${snapshot!.members[money.firstOwesSecond > 0 ? 1 : 0]?.nickname ?? 'pasangan'}.`}
-            </p>
-            <small className="muted">Ringkasan pencatatan, tanpa transfer uang.</small>
-          </section>
-          <section className="panel rain-panel">
-            <CloudRain size={23} />
-            <h3>Kalau langit berubah pikiran…</h3>
-            <p>{p.rain || 'Siapkan rencana indoor lewat Edit rencana.'}</p>
-          </section>
-        </aside>
+              )}
+              <p className="small-copy">
+                {snapshot!.members.length < 2
+                  ? 'Patungan tersedia setelah pasangan bergabung.'
+                  : !money.actual
+                    ? 'Catat pengeluaran aktual di kegiatan untuk melihat pembagiannya.'
+                    : money.firstOwesSecond === 0
+                      ? 'Sudah pas, sama-sama beres ♡'
+                      : `${snapshot!.members[money.firstOwesSecond > 0 ? 0 : 1]?.nickname ?? 'Pasangan'} perlu mengganti ${rupiah(Math.abs(money.firstOwesSecond))} ke ${snapshot!.members[money.firstOwesSecond > 0 ? 1 : 0]?.nickname ?? 'pasangan'}.`}
+              </p>
+              <small className="muted">Ringkasan pencatatan, tanpa transfer uang.</small>
+            </section>
+            <section className="panel rain-panel">
+              <CloudRain size={23} />
+              <h3>Kalau langit berubah pikiran…</h3>
+              <p>{p.rain || 'Siapkan rencana indoor lewat Edit rencana.'}</p>
+            </section>
+          </aside>
+        </div>
       </div>
       {edit && (
         <PlanEditor
@@ -678,13 +701,16 @@ export function PlanDetail({ id }: { id: string }) {
           submit="Simpan checklist"
           onClose={() => setCheckEdit(null)}
           onSubmit={async (v) => {
+            if (!livePlan) throw new Error(deletedDraftMessage);
             await save(
               'checklist_items',
               { ...checkEdit.data, title: String(v.title), assignee: String(v.assignee) },
               checkEdit,
             );
           }}
-        />
+        >
+          {!livePlan && <p className="info-note">{deletedDraftMessage}</p>}
+        </FormDialog>
       )}
       {celebrate && <Confetti />}
     </>

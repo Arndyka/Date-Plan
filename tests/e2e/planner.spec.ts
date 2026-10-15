@@ -1,9 +1,107 @@
-import { test, expect } from '@playwright/test';
+﻿import { test, expect } from '@playwright/test';
+
+test('concurrent plan edits preserve the draft and reject stale saves', async ({
+  page,
+  context,
+}) => {
+  await page.getByRole('link', { name: 'Lihat rencana kita', exact: true }).click();
+  const partner = await context.newPage();
+  await partner.goto('./');
+  await partner.getByRole('button', { name: 'Jelajahi demo' }).click();
+  await partner.getByRole('link', { name: 'Lihat rencana kita', exact: true }).click();
+  await page.getByRole('button', { name: 'Edit rencana' }).click();
+  await page.getByLabel('Judul date').fill('Draft milikku');
+  await partner.getByRole('button', { name: 'Edit rencana' }).click();
+  await partner.getByLabel('Judul date').fill('Disimpan pasangan');
+  await partner.getByRole('button', { name: 'Simpan rencana' }).click();
+  await expect(page.locator('h1')).toHaveText('Disimpan pasangan');
+  await page.getByRole('button', { name: 'Simpan rencana' }).click();
+  await expect(page.getByRole('alert')).toContainText('diubah');
+  await expect(page.getByLabel('Judul date')).toHaveValue('Draft milikku');
+  await page.getByRole('button', { name: 'Simpan rencana' }).click();
+  await expect(page.getByRole('alert')).toContainText('diubah');
+  await partner.reload();
+  await expect(partner.locator('h1')).toHaveText('Disimpan pasangan');
+});
+
+test('concurrent space edits preserve the draft and reject stale saves', async ({
+  page,
+  context,
+}) => {
+  await page.goto('./#/settings');
+  const partner = await context.newPage();
+  await partner.goto('./');
+  await partner.getByRole('button', { name: 'Jelajahi demo' }).click();
+  await partner.goto('./#/settings');
+  await page.getByRole('button', { name: 'Edit ruang' }).click();
+  await page.getByLabel('Nama ruang').fill('Draft ruangku');
+  await partner.getByRole('button', { name: 'Edit ruang' }).click();
+  await partner.getByLabel('Nama ruang').fill('Ruang pasangan');
+  await partner.getByRole('button', { name: 'Simpan', exact: true }).click();
+  await expect(page.locator('.space-display h3')).toHaveText('Ruang pasangan');
+  await page.getByRole('button', { name: 'Simpan', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('diubah');
+  await expect(page.getByLabel('Nama ruang')).toHaveValue('Draft ruangku');
+  await partner.reload();
+  await expect(partner.locator('.space-display h3')).toHaveText('Ruang pasangan');
+});
+
+test('single member rooms do not allocate a debt to an absent partner', async ({ page }) => {
+  await page.evaluate(() => {
+    const key = 'our-little-date.demo.v1';
+    const data = JSON.parse(localStorage.getItem(key)!);
+    data.members = data.members.slice(0, 1);
+    data.tables.activities[0].data.actual = 300000;
+    data.tables.activities[0].data.paidFirst = 300000;
+    localStorage.setItem(key, JSON.stringify(data));
+  });
+  await page.reload();
+  await page.getByRole('link', { name: 'Lihat rencana kita', exact: true }).click();
+  await expect(page.getByText('Patungan tersedia setelah pasangan bergabung.')).toBeVisible();
+  await expect(page.getByText(/perlu mengganti/)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Edit rencana' }).click();
+  await expect(page.getByLabel('Porsi anggota pertama (%)')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Tambah kegiatan' }).click();
+  await expect(page.getByLabel('Dibayar kamu (Rp)')).toHaveCount(0);
+});
 
 test.beforeEach(async ({ page }) => {
   await page.goto('./');
   await page.getByRole('button', { name: 'Jelajahi demo' }).click();
 });
+
+for (const editor of [
+  { button: 'Edit rencana', label: 'Judul date', submit: 'Simpan rencana' },
+  { button: 'Tambah kegiatan', label: 'Nama kegiatan', submit: 'Simpan kegiatan' },
+  { button: 'Edit Alas piknik dan snack', label: 'Barang / tugas', submit: 'Simpan checklist' },
+]) {
+  test(`remote deletion preserves ${editor.submit} draft without resurrection`, async ({
+    page,
+    context,
+  }) => {
+    await page.getByRole('link', { name: 'Lihat rencana kita', exact: true }).click();
+    const partner = await context.newPage();
+    await partner.goto('./');
+    await partner.getByRole('button', { name: 'Jelajahi demo' }).click();
+    await partner.getByRole('link', { name: 'Lihat rencana kita', exact: true }).click();
+    await page.getByRole('button', { name: editor.button, exact: true }).click();
+    await page.getByLabel(editor.label).fill('Draft jangan hilang');
+    await partner.getByRole('button', { name: 'Hapus rencana', exact: true }).click();
+    await partner.getByRole('button', { name: 'Hapus', exact: true }).click();
+    await expect(page.getByRole('dialog').getByText(/Rencana ini sudah dihapus/)).toBeVisible();
+    await expect(page.getByLabel(editor.label)).toHaveValue('Draft jangan hilang');
+    await page.getByRole('button', { name: editor.submit, exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText('dihapus');
+    await page.keyboard.press('Escape');
+    await expect(page.getByText('Rencana tidak ditemukan.')).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => JSON.parse(localStorage.getItem('our-little-date.demo.v1')!).tables.plans.length,
+      ),
+    ).toBe(0);
+  });
+}
 
 test('plans, activity budgets, completion and persistence', async ({ page }) => {
   await page.getByRole('button', { name: 'Buat date baru', exact: true }).first().click();

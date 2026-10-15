@@ -63,7 +63,7 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
     ) : path === '/plans' ? (
       <PlanList />
     ) : path.startsWith('/plans/') ? (
-      <PlanDetail id={path.slice(7)} />
+      <PlanDetail key={path.slice(7)} id={path.slice(7)} />
     ) : path === '/calendar' ? (
       <Calendar />
     ) : path === '/inspiration' ? (

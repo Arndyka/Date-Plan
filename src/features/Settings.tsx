@@ -12,9 +12,11 @@ import {
 import { useSpace } from '../data/SpaceProvider';
 import { supabase, appUrl } from '../data/client';
 import { Heading, FormDialog, Confirm } from '../components/UI';
+import type { Space } from '../domain/types';
 export default function Settings({ onLogout }: { onLogout: () => void }) {
   const { snapshot, demo, userId, updateSpace, nickname, toast, act } = useSpace();
   const [edit, setEdit] = useState<'space' | 'name' | null>(null),
+    [editingSpace, setEditingSpace] = useState<Space | null>(null),
     [invite, setInvite] = useState(''),
     [busy, setBusy] = useState(false),
     [reset, setReset] = useState(false);
@@ -42,7 +44,14 @@ export default function Settings({ onLogout }: { onLogout: () => void }) {
         <section className="panel">
           <div className="section-head">
             <h2>Ruang kita</h2>
-            <button className="icon-btn" aria-label="Edit ruang" onClick={() => setEdit('space')}>
+            <button
+              className="icon-btn"
+              aria-label="Edit ruang"
+              onClick={() => {
+                setEditingSpace(space);
+                setEdit('space');
+              }}
+            >
               <Pencil size={16} />
             </button>
           </div>
@@ -202,7 +211,7 @@ export default function Settings({ onLogout }: { onLogout: () => void }) {
           }
           initial={
             edit === 'space'
-              ? { name: space.name, sweet_note: space.sweet_note }
+              ? { name: editingSpace!.name, sweet_note: editingSpace!.sweet_note }
               : { nickname: me.nickname }
           }
           onClose={() => setEdit(null)}
@@ -210,7 +219,10 @@ export default function Settings({ onLogout }: { onLogout: () => void }) {
             if (edit === 'space') {
               if (String(v.name).length > 80 || String(v.sweet_note).length > 1000)
                 throw new Error('Nama maksimal 80 karakter, catatan maksimal 1.000 karakter.');
-              await updateSpace(space, { name: String(v.name), sweet_note: String(v.sweet_note) });
+              await updateSpace(editingSpace!, {
+                name: String(v.name),
+                sweet_note: String(v.sweet_note),
+              });
             } else {
               if (String(v.nickname).length > 40)
                 throw new Error('Nama panggilan maksimal 40 karakter.');

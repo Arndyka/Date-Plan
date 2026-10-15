@@ -45,7 +45,7 @@ npm run build
 npm run test:e2e
 ```
 
-Unit/integrasi database memakai Vitest dan PGlite (PostgreSQL nyata di WASM). Browser tests memakai Playwright dengan Edge yang sudah terpasang di Windows, untuk desktop dan emulasi iPhone. Untuk host selain Windows, gunakan Chromium dengan menghapus `channel: 'msedge'` di konfigurasi lalu `npx playwright install chromium`.
+Unit/integrasi database memakai Vitest dan PGlite (PostgreSQL nyata di WASM). Browser tests memakai Playwright dengan Edge yang sudah terpasang di Windows, untuk desktop dan emulasi iPhone. Pada host selain Windows, konfigurasi otomatis memakai Chromium; siapkan dengan `npx playwright install chromium`. Untuk menguji build produksi atau URL live, set `PLAYWRIGHT_BASE_URL` ke URL lengkap yang diakhiri `/Date-Plan/` sebelum menjalankan browser tests.
 
 Pengujian RLS lokal tidak membuktikan konfigurasi Auth, Realtime, email, dan izin pada proyek Supabase produksi. Verifikasi produksi harus dilakukan setelah koneksi tersedia; lihat [catatan verifikasi](docs/verification.md).
 
