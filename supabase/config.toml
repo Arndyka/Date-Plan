@@ -1,0 +1,14 @@
+# Date-Plan: only explicitly declared settings are applied by `supabase config push`.
+# Review `supabase config diff --project-ref rwdwbvnunsnampznfhyv` before applying.
+project_id = "DATE-PLAN"
+
+[auth]
+site_url = "https://arndyka.github.io/Date-Plan/"
+additional_redirect_urls = ["https://arndyka.github.io/Date-Plan/", "http://127.0.0.1:5173/Date-Plan/", "http://127.0.0.1:5174/Date-Plan/"]
+enable_signup = true
+enable_anonymous_sign_ins = false
+minimum_password_length = 8
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true

@@ -17,6 +17,20 @@ Publishable/anon key boleh dikirim ke browser karena akses dilindungi Auth, gran
 
 URL dan publishable key saja tidak memberi izin menerapkan SQL. Gunakan koneksi Supabase yang berwenang atau SQL Editor akun pemilik untuk menerapkan migrasi. Jangan meminta pengguna mengirim password database ke repository.
 
+## Konfigurasi CLI proyek ini
+
+Proyek tujuan: `rwdwbvnunsnampznfhyv`. `supabase/config.toml` hanya mendeklarasikan pengaturan Auth yang dibutuhkan aplikasi, agar konfigurasi layanan lain tidak ikut ditimpa. Setelah login pemilik tersedia:
+
+```sh
+supabase link --project-ref rwdwbvnunsnampznfhyv
+supabase db push --dry-run
+supabase db push
+supabase config diff --project-ref rwdwbvnunsnampznfhyv
+supabase config push --project-ref rwdwbvnunsnampznfhyv
+```
+
+Tinjau daftar migrasi dan diff sebelum menjalankannya. Jangan gunakan `db reset` pada proyek hosted. File `.env.local`, metadata `.temp`, dan binary alat lokal tidak dimasukkan ke Git.
+
 ## Pemeriksaan minimum sebelum memakai data asli
 
 - Akun luar tidak melihat ruang, anggota, jadwal, catatan, wishlist, dan jurnal milik pasangan.

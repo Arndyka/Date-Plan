@@ -23,7 +23,8 @@ Verified commands after review fixes: `npm test` — 17 passed; `npm run build` 
 
 ## External checks still pending
 
-- Supabase Project URL and publishable key have not yet been supplied. The connector was discovered but its connection has not been confirmed.
+- Supabase Project URL and publishable key were supplied and validated against `/auth/v1/settings` (HTTP 200). Email signup and confirmation are enabled. Public configuration is stored in ignored `.env.local` and GitHub Actions variables. The configured production build and all 17 local tests pass.
+- Project `rwdwbvnunsnampznfhyv` does not yet expose the application's `spaces` table (HTTP 404). CLI 2.121.0 was obtained from the official GitHub release and its SHA256 verified after the npm ARM64 binary dependency failed to install. CLI initialization is complete; owner login, remote migration, and redirect configuration are pending. No admin token or database password has been provided.
 - Remote migration, email delivery, password recovery, two real accounts, actual Realtime transport, and simultaneous transactions across server connections therefore remain unverified. PGlite proves database behavior in one local PostgreSQL instance; it is not an external account test or a concurrent-session test.
 - GitHub Pages deployment succeeded on 15 October 2026: [workflow run](https://github.com/Arndyka/Date-Plan/actions/runs/38731357035), source commit `620e6d9`. The public URL `https://arndyka.github.io/Date-Plan/` returned HTTP 200 with the expected app title. The deployed configuration currently supports the local demo; Supabase has not been activated.
 - All **24 browser tests passed against the public GitHub Pages URL** in one run (1.0 minute, two workers), covering desktop and mobile. Production screenshots were visually inspected at both sizes. This confirms the deployed frontend and demo behavior, not private cloud synchronization.
@@ -39,4 +40,4 @@ Verified commands after review fixes: `npm test` — 17 passed; `npm run build` 
 - JSON payloads retain relational parent IDs, foreign keys, server-side validation, and RLS. Introducing new fields requires updating TypeScript and SQL validation together.
 - Display names are stored in room membership rather than a separate profile table; supporting several rooms per account would require a schema change.
 - Test selectors use accessible headings and the mobile navigation menu rather than ambiguous repeated text; coverage and assertions remain intact.
-- Shared cloud behavior remains an explicit pending dependency. Deploying before configuration provides the local demo only; activation requires migration, Auth URLs, public configuration, and remote verification.
+- Shared cloud behavior remains an explicit pending dependency. The public deployment remains the local demo until migration and Auth URL configuration are applied and verified. The next deployment will consume the configured GitHub Actions variables.
