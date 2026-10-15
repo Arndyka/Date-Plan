@@ -14,6 +14,7 @@ import Inspiration from './features/Inspiration';
 import Wishlist from './features/Wishlist';
 import Memories from './features/Memories';
 import Settings from './features/Settings';
+import Recommendations from './features/Recommendations';
 
 function Workspace({ onLogout }: { onLogout: () => void }) {
   const { loading, error, snapshot, refresh, act } = useSpace();
@@ -60,6 +61,8 @@ function Workspace({ onLogout }: { onLogout: () => void }) {
   const page =
     path === '/' || path.startsWith('/join') ? (
       <Dashboard />
+    ) : path === '/ideas' ? (
+      <Recommendations />
     ) : path === '/plans' ? (
       <PlanList />
     ) : path.startsWith('/plans/') ? (

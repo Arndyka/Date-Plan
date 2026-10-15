@@ -10,25 +10,16 @@ export function parseRupiah(value: string): number {
   if (!Number.isSafeInteger(n)) throw new Error('Nominal terlalu besar.');
   return n;
 }
-export function summarizeBudget(
-  items: { estimate: number; actual: number; paidFirst: number }[],
-  limit: number,
-  firstShare: number,
-) {
-  if (!Number.isInteger(firstShare) || firstShare < 0 || firstShare > 100)
-    throw new Error('Porsi harus 0–100%.');
+export function summarizeBudget(items: { estimate: number; actual: number }[], limit: number) {
+  parseRupiah(String(limit));
   let estimated = 0,
-    actual = 0,
-    first = 0;
+    actual = 0;
   for (const x of items) {
-    [x.estimate, x.actual, x.paidFirst].forEach((n) => parseRupiah(String(n)));
-    if (x.paidFirst > x.actual) throw new Error('Kontribusi tidak boleh melebihi biaya aktual.');
+    [x.estimate, x.actual].forEach((n) => parseRupiah(String(n)));
     estimated += x.estimate;
     actual += x.actual;
-    first += x.paidFirst;
   }
-  const obligation = Number((BigInt(actual) * BigInt(firstShare)) / 100n);
-  return { estimated, actual, remaining: limit - actual, firstOwesSecond: obligation - first };
+  return { estimated, actual, remaining: limit - actual };
 }
 export function jakartaInstant(date: string, time: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time))

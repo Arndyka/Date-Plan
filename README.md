@@ -7,10 +7,13 @@ Website: **https://arndyka.github.io/Date-Plan/**. Supabase sudah aktif: ruang p
 ## Fitur
 
 - Rencana date, rundown yang dapat diurutkan, lokasi dan rute Google Maps.
-- Estimasi/aktual budget, kontribusi masing-masing, pembagian biaya, dan checklist.
+- Estimasi/aktual budget, sisa anggaran untuk berdua, dan checklist, tanpa split bill.
 - Kalender dengan catatan, tautan Google Calendar, dan ekspor `.ics`.
 - Papan inspirasi TikTok: tautan, pemutar opsional, kategori, catatan, dan kaitan ke rencana.
 - Wishlist dengan vote, acak ide berdasarkan kategori/budget, dan jurnal date selesai.
+- Enam rekomendasi berganti setiap Senin (WIB), dengan kota bersama yang dapat diubah; default Bandung.
+- Pustaka 60 ide date, filter suasana/tempat/budget, persiapan, durasi, Maps, serta simpan ke wishlist atau rencana. Enam ide memiliki referensi tempat Bandung dari sumber resmi.
+- Personalisasi Arnold & Angel, pilihan profil dengan nama lengkap, dan nama panggilan yang tetap bisa diubah.
 - Akun email/password, ruang pasangan privat, undangan sekali pakai, dan data Supabase yang dilindungi RLS.
 - Demo terpisah dengan penyimpanan lokal, backup JSON, layout mobile, keyboard dialog, dan reduced motion.
 
@@ -57,6 +60,7 @@ Pengujian produksi terpisah tersedia melalui `node tests/remote-smoke.mjs`, deng
 - Saat offline, data yang sudah dimuat bisa dibaca dan isian formulir dipertahankan selama halaman terbuka. Penulisan cloud memerlukan koneksi.
 - Satu ruang per akun, maksimal dua anggota. Tidak ada upload foto/video, transfer uang, atau pergantian pasangan melalui UI.
 - Export JSON adalah cadangan untuk diunduh; import otomatis belum tersedia.
+- Rekomendasi berputar dari koleksi terkurasi, bukan hasil pencarian acara langsung. Kota di luar Bandung mendapatkan ide umum dan pencarian Maps sesuai kota. Anggaran adalah perkiraan per date untuk berdua, bukan harga resmi tempat.
 
 ## Struktur
 

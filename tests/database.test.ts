@@ -1,6 +1,6 @@
 ﻿import { beforeAll, afterAll, describe, it, expect } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const a = '00000000-0000-4000-8000-000000000001';
 const b = '00000000-0000-4000-8000-000000000002';
@@ -19,8 +19,11 @@ beforeAll(async () => {
   await db.exec(
     `create role anon; create role authenticated; create schema auth; create table auth.users(id uuid primary key); insert into auth.users values ('${a}'),('${b}'),('${c}'); create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$; grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;`,
   );
-  await db.exec(readFileSync('supabase/migrations/202610150001_initial.sql', 'utf8'));
-});
+  for (const file of readdirSync('supabase/migrations')
+    .filter((x) => x.endsWith('.sql'))
+    .sort())
+    await db.exec(readFileSync(`supabase/migrations/${file}`, 'utf8'));
+}, 30000); // WASM startup on Windows ARM can exceed the default 10s hook limit.
 afterAll(async () => {
   await db.close();
 });
@@ -197,6 +200,42 @@ describe('actual PostgreSQL access policies and RPCs', () => {
     expect(
       (await rows('select plan_id from inspirations where id=$1', [ref]))[0].plan_id,
     ).toBeNull();
+  });
+  it('shares recommendation city only with room members and rejects invalid or stale changes', async () => {
+    await as(a);
+    const before = (
+      await rows('select recommendation_city,version from spaces where id=$1', [room])
+    )[0];
+    expect(before.recommendation_city).toBe('Bandung');
+    await rows('update spaces set recommendation_city=$1 where id=$2 and version=$3', [
+      'Yogyakarta',
+      room,
+      before.version,
+    ]);
+    await as(b);
+    expect(
+      (await rows('select recommendation_city from spaces where id=$1', [room]))[0]
+        .recommendation_city,
+    ).toBe('Yogyakarta');
+    expect(
+      await rows(
+        'update spaces set recommendation_city=$1 where id=$2 and version=$3 returning id',
+        ['Bogor', room, before.version],
+      ),
+    ).toEqual([]);
+    await expect(
+      rows('update spaces set recommendation_city=$1 where id=$2', ['   ', room]),
+    ).rejects.toThrow();
+    await expect(
+      rows('update spaces set recommendation_city=$1 where id=$2', ['a'.repeat(81), room]),
+    ).rejects.toThrow();
+    await as(c);
+    expect(
+      await rows('update spaces set recommendation_city=$1 where id=$2 returning id', [
+        'Bogor',
+        room,
+      ]),
+    ).toEqual([]);
   });
   it('rejects expired and revoked invitations', async () => {
     await as(c);

@@ -66,7 +66,7 @@ export function PlanEditor({
     date: today(),
     start: '15:00',
     end: '18:00',
-    location: '',
+    location: snapshot!.space.recommendation_city || 'Bandung',
     budget: 0,
     share: 50,
     status: 'terjadwal',
@@ -83,15 +83,6 @@ export function PlanEditor({
     { name: 'end', label: 'Jam selesai (WIB)', type: 'time', required: true },
     { name: 'budget', label: 'Batas budget (Rp)', type: 'number', required: true },
     {
-      name: 'share',
-      label: 'Porsi anggota pertama (%)',
-      type: 'number',
-      min: 0,
-      max: 100,
-      required: true,
-      hint: 'Sisa persentase untuk pasangan.',
-    },
-    {
       name: 'status',
       label: 'Status',
       options: opts(['draft', 'terjadwal', 'selesai', 'dibatalkan']),
@@ -103,7 +94,7 @@ export function PlanEditor({
   return (
     <FormDialog
       title={row ? 'Rapikan rencana kita' : 'Satu date baru, satu cerita baru'}
-      fields={fields.filter((f) => f.name !== 'share' || snapshot!.members.length === 2)}
+      fields={fields}
       initial={defaults as unknown as Record<string, unknown>}
       submit="Simpan rencana"
       onClose={onClose}
@@ -220,8 +211,7 @@ function ActivityEditor({
 }) {
   const { save, snapshot } = useSpace();
   const deleted = !snapshot!.tables.plans.some((p) => p.id === plan.id);
-  const count = snapshot!.tables.activities.filter((x) => x.plan_id === plan.id).length,
-    first = snapshot!.members[0]?.nickname ?? 'kamu';
+  const count = snapshot!.tables.activities.filter((x) => x.plan_id === plan.id).length;
   const initial: ActivityData = {
     title: '',
     start: plan.data.start,
@@ -248,19 +238,12 @@ function ActivityEditor({
     { name: 'category', label: 'Kategori', options: opts(categories) },
     { name: 'estimate', label: 'Estimasi (Rp)', type: 'number', required: true },
     { name: 'actual', label: 'Aktual (Rp)', type: 'number', required: true },
-    {
-      name: 'paidFirst',
-      label: `Dibayar ${first.toLowerCase()} (Rp)`,
-      type: 'number',
-      required: true,
-      hint: `Sisa aktual dianggap dibayar ${snapshot!.members[1]?.nickname ?? 'pasangan'}.`,
-    },
     { name: 'note', label: 'Catatan kegiatan', type: 'textarea', wide: true },
   ];
   return (
     <FormDialog
       title={row ? 'Edit momen kecil' : 'Tambah kegiatan'}
-      fields={fields.filter((f) => f.name !== 'paidFirst' || snapshot!.members.length === 2)}
+      fields={fields}
       initial={initial as unknown as Record<string, unknown>}
       submit="Simpan kegiatan"
       onClose={onClose}
@@ -271,8 +254,9 @@ function ActivityEditor({
           jakartaInstant(plan.data.date, data.start),
           jakartaInstant(plan.data.date, data.end),
         );
-        if (snapshot!.members.length < 2) data.paidFirst = data.actual;
-        summarizeBudget([data], plan.data.budget, plan.data.share);
+        // Legacy payload field remains for older server/client compatibility.
+        data.paidFirst = 0;
+        summarizeBudget([data], plan.data.budget);
         if (data.maps && !safeMapsUrl(data.maps))
           throw new Error('Gunakan tautan Google Maps HTTPS yang valid.');
         await save('activities', data, row, { plan_id: plan.id });
@@ -328,7 +312,6 @@ export function PlanDetail({ id }: { id: string }) {
     money = summarizeBudget(
       activities.map((x) => x.data),
       p.budget,
-      p.share,
     ),
     cal = { ...p, id };
   const overlap = activities.some((a, i) =>
@@ -617,33 +600,6 @@ export function PlanDetail({ id }: { id: string }) {
                   <Plus size={18} />
                 </button>
               </form>
-            </section>
-            <section className="panel sage-panel">
-              <div className="section-head">
-                <h2>Patungan manis</h2>
-                <Wallet size={18} />
-              </div>
-              {snapshot!.members.length === 2 && (
-                <div className="split-people">
-                  {snapshot!.members.map((m, i) => (
-                    <div key={m.user_id}>
-                      <span>{m.nickname.slice(0, 1)}</span>
-                      <b>{m.nickname}</b>
-                      <small>{i === 0 ? p.share : 100 - p.share}%</small>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <p className="small-copy">
-                {snapshot!.members.length < 2
-                  ? 'Patungan tersedia setelah pasangan bergabung.'
-                  : !money.actual
-                    ? 'Catat pengeluaran aktual di kegiatan untuk melihat pembagiannya.'
-                    : money.firstOwesSecond === 0
-                      ? 'Sudah pas, sama-sama beres ♡'
-                      : `${snapshot!.members[money.firstOwesSecond > 0 ? 0 : 1]?.nickname ?? 'Pasangan'} perlu mengganti ${rupiah(Math.abs(money.firstOwesSecond))} ke ${snapshot!.members[money.firstOwesSecond > 0 ? 1 : 0]?.nickname ?? 'pasangan'}.`}
-              </p>
-              <small className="muted">Ringkasan pencatatan, tanpa transfer uang.</small>
             </section>
             <section className="panel rain-panel">
               <CloudRain size={23} />

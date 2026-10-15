@@ -3649,3 +3649,302 @@ dialog::backdrop {
 .idea-2 .idea-illustration > b {
   color: #78464e;
 }
+
+/* Weekly picks: little postcards, with room for the practical details. */
+.recommendation-hero {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 32px;
+  padding: 30px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: linear-gradient(115deg, #fae9e7, #f7f0e2);
+  margin: 24px 0 36px;
+}
+.recommendation-hero > div > svg {
+  color: var(--rose);
+  margin-bottom: 12px;
+}
+.recommendation-hero h2 {
+  margin: 0 0 10px;
+}
+.recommendation-hero p {
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 440px;
+}
+.recommendation-hero form {
+  align-self: center;
+}
+.city-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.recommendation-section {
+  margin: 32px 0;
+}
+.recommendation-section .section-head {
+  align-items: center;
+}
+.recommendation-section .section-head p,
+.weekly-preview .section-head p {
+  margin-bottom: 6px;
+}
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.recommendation-card {
+  padding: 23px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #fffdf9;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+  animation: postcard-in 0.4s ease both;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.recommendation-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 9px 28px #73554810;
+}
+.recommendation-card:nth-child(3n + 2) {
+  background: #f6f7ee;
+}
+.recommendation-card:nth-child(3n) {
+  background: #fcf0ef;
+}
+.recommendation-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.recommendation-symbol {
+  font-size: 30px;
+  line-height: 1;
+  color: #945c64;
+}
+.recommendation-card h3 {
+  font-size: 21px;
+  margin: 8px 0 10px;
+  line-height: 1.3;
+}
+.recommendation-card > p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.75;
+  margin: 0 0 15px;
+}
+.recommendation-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  color: #67533f;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.recommendation-meta span,
+.recommendation-links a {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+.recommendation-card details {
+  border-top: 1px dashed #dacdc0;
+  padding-top: 12px;
+  margin-top: auto;
+}
+.recommendation-card summary,
+.idea-knowledge summary,
+.profile-presets summary {
+  cursor: pointer;
+  color: #745345;
+  font-size: 13px;
+  font-weight: 600;
+}
+.recommendation-card details p,
+.idea-knowledge p,
+.profile-presets p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.recommendation-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  min-height: 30px;
+  margin-top: 14px;
+  font-size: 11px;
+}
+.recommendation-links a {
+  color: #81505b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.recommendation-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+  margin-top: 10px;
+}
+.recommendation-actions .link-button {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
+}
+.recommendation-actions .link-button:disabled {
+  color: #5b694d;
+  cursor: default;
+}
+.recommendation-disclaimer {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 850px;
+  margin-top: 18px;
+}
+.idea-filters {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr 1fr;
+  gap: 14px;
+  background: #fffcf7;
+}
+.idea-filters label {
+  font-size: 11px;
+}
+.idea-filters input,
+.idea-filters select {
+  min-width: 0;
+  width: 100%;
+}
+.more-ideas {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0;
+}
+.idea-knowledge {
+  margin-top: 28px;
+}
+.idea-knowledge a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--rose);
+  font-size: 12px;
+}
+.weekly-preview .idea-info small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.couple-picker {
+  border: 0;
+  padding: 0;
+  margin: 18px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.couple-picker legend {
+  padding: 0 0 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.couple-picker button {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  background: #fff9f5;
+  border: 1px solid #d9c9bd;
+  border-radius: 14px;
+  padding: 14px;
+  color: #493a3b;
+  text-align: left;
+  cursor: pointer;
+}
+.couple-picker button[aria-pressed='true'] {
+  border-color: var(--rose);
+  background: #f9e6e6;
+}
+.couple-picker small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.profile-presets {
+  border-top: 1px dashed #d9c9bd;
+  padding-top: 16px;
+  margin-top: 20px;
+}
+@keyframes postcard-in {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 1100px) {
+  .recommendation-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .idea-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .recommendation-hero {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 22px;
+  }
+  .recommendation-grid {
+    grid-template-columns: 1fr;
+  }
+  .recommendation-section .section-head > .handwriting {
+    display: none;
+  }
+  .recommendation-card {
+    padding: 23px;
+  }
+  .idea-filters {
+    padding: 16px;
+    gap: 12px;
+  }
+  .weekly-preview .section-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .recommendation-card {
+    animation: none;
+    transition: none;
+  }
+  .recommendation-card:hover {
+    transform: none;
+  }
+}

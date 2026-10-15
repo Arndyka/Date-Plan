@@ -50,3 +50,15 @@ With the owner's explicit approval, a single confirmation email was sent through
 - Display names are stored in room membership rather than a separate profile table; supporting several rooms per account would require a schema change.
 - Test selectors use accessible headings and the mobile navigation menu rather than ambiguous repeated text; coverage and assertions remain intact.
 - Shared cloud behavior and an actual email confirmation flow have been verified against the live deployment. No Auth confirmation requirement has been disabled.
+
+## Weekly ideas update (15 October 2026)
+
+- Removed split-bill controls, contributions, and debt calculations from the interface. Budget totals remain. Legacy payload fields remain solely for schema compatibility.
+- Added 60 original date prompts, six Monday-based recommendations in Asia/Jakarta, shared city preferences defaulting to Bandung, search/category/setting/budget filters, and conversion to plans or shared wishlist items. Six Bandung destinations have official reference links; other cities use generic activities and Maps searches. Budgets are planning estimates for two, not live venue prices.
+- Added Arnold & Angel defaults and profile choices with the supplied full names. Existing saved room names and profiles are preserved.
+- Migration `202610150002_recommendation_city` was applied to the hosted project after a dry run confirmed it was the only pending migration. Existing RLS and version conflict protections remain in effect.
+- Final local checks: **23 unit/database tests passed**, production TypeScript/build passed, and **30 desktop/mobile browser tests passed** in one production-preview run (2.6 minutes, one worker). Axe checks include the recommendations page and profile choices; screenshots were visually inspected on desktop and mobile. Layout checks cover widths 360, 390, 768, and 1280.
+- Review caught a rotation bug that permanently excluded some ideas. A 104-week coverage regression failed at 24/60 before the fix and now covers all 60. Review also caught overlapping wishlist saves: a delayed real POST reproduced the enabled second button; all wishlist save buttons now remain disabled while a save is pending.
+- Browser harness fixes bring the active tab forward, await partner saves, and await the actual post-delete list screen before checking the other tab. The deletion handler navigates the deleting tab to the plan list; the tab holding an unsaved draft stays in its editor. Assertions for draft preservation, conflict rejection, and no resurrection remain intact.
+- PGlite startup has a 30-second setup timeout for cold Windows ARM64 runs. Application assertions and test coverage were not weakened. The build reports a nonblocking JavaScript chunk-size warning (about 552 kB uncompressed, 160 kB gzip).
+- The production-preview frontend passed all **8 hosted Supabase smoke checks**, including two independent authenticated browser contexts, bidirectional city changes, identical weekly selections, shared wishlist persistence, and the delayed-POST save guard. Temporary accounts and room were removed. These checks send no email.

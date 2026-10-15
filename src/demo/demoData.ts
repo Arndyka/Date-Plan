@@ -6,6 +6,7 @@ import {
   type Snapshot,
 } from '../domain/types';
 import { today } from '../domain/logic';
+import { coupleName } from '../domain/couple';
 export const DEMO_USER = '00000000-0000-4000-8000-000000000001';
 export const DEMO_PARTNER = '00000000-0000-4000-8000-000000000002';
 export function makeDemo(): Snapshot {
@@ -39,7 +40,7 @@ export function makeDemo(): Snapshot {
     date,
     start: '15:00',
     end: '19:00',
-    location: 'Jakarta Selatan',
+    location: 'Bandung',
     budget: 350000,
     share: 50,
     status: 'terjadwal',
@@ -54,7 +55,7 @@ export function makeDemo(): Snapshot {
       start: '15:00',
       end: '16:00',
       place: 'Coffee shop favorit',
-      address: 'Jakarta Selatan',
+      address: 'Bandung',
       maps: '',
       category: 'Kuliner',
       estimate: 90000,
@@ -73,8 +74,8 @@ export function makeDemo(): Snapshot {
       title: 'Golden hour picnic',
       start: '16:15',
       end: '17:45',
-      place: 'Taman Literasi Martha Christina Tiahahu',
-      address: 'Blok M, Jakarta',
+      place: 'Taman untuk piknik',
+      address: 'Bandung',
       maps: '',
       category: 'Outdoor',
       estimate: 120000,
@@ -93,8 +94,8 @@ export function makeDemo(): Snapshot {
       title: 'Dinner for two',
       start: '18:00',
       end: '19:00',
-      place: 'Blok M',
-      address: 'Jakarta Selatan',
+      place: 'Tempat makan pilihan kita',
+      address: 'Bandung',
       maps: '',
       category: 'Kuliner',
       estimate: 140000,
@@ -122,34 +123,35 @@ export function makeDemo(): Snapshot {
     title: 'Pottery date',
     category: 'Seni',
     estimate: 250000,
-    place: 'Jakarta',
+    place: 'Bandung',
     note: 'Bikin mug yang bentuknya sedikit aneh, tapi penuh cinta.',
   });
   add('wishlist_items', 'demo-wish-2', {
     title: 'Bookstore hopping',
     category: 'Santai',
     estimate: 100000,
-    place: 'Jakarta',
+    place: 'Bandung',
     note: 'Pilih satu buku untuk satu sama lain.',
   });
   add('wishlist_items', 'demo-wish-3', {
     title: 'Sunset & gelato',
     category: 'Kuliner',
     estimate: 80000,
-    place: 'Jakarta',
+    place: 'Bandung',
     note: 'Dua rasa favorit, satu sore yang manis.',
   });
   return {
     space: {
       id: space,
-      name: 'Our little world',
+      name: coupleName,
       sweet_note: 'Sama kamu, hari biasa pun jadi istimewa.',
+      recommendation_city: 'Bandung',
       created_by: DEMO_USER,
       version: 1,
     },
     members: [
-      { user_id: DEMO_USER, space_id: space, nickname: 'Kamu', slot: 1 },
-      { user_id: DEMO_PARTNER, space_id: space, nickname: 'Dia', slot: 2 },
+      { user_id: DEMO_USER, space_id: space, nickname: 'Arnold', slot: 1 },
+      { user_id: DEMO_PARTNER, space_id: space, nickname: 'Angel', slot: 2 },
     ],
     tables,
   };

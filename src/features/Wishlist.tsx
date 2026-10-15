@@ -13,43 +13,7 @@ import {
   Dialog,
 } from '../components/UI';
 import { PlanEditor } from './Planner';
-const builtIn: WishlistData[] = [
-  {
-    title: 'Piknik kecil di taman',
-    category: 'Outdoor',
-    estimate: 100000,
-    place: '',
-    note: 'Bawa bekal, alas duduk, dan playlist favorit.',
-  },
-  {
-    title: 'Masak resep baru bareng',
-    category: 'Santai',
-    estimate: 80000,
-    place: 'Di rumah',
-    note: 'Pilih resep yang belum pernah dicoba.',
-  },
-  {
-    title: 'Jalan sore & es krim',
-    category: 'Kuliner',
-    estimate: 50000,
-    place: '',
-    note: 'Tidak terburu-buru, hanya kita.',
-  },
-  {
-    title: 'Jelajah museum',
-    category: 'Seni',
-    estimate: 100000,
-    place: '',
-    note: 'Pilih satu karya favorit untuk diceritakan.',
-  },
-  {
-    title: 'Jalan kaki tanpa tujuan',
-    category: 'Petualangan',
-    estimate: 0,
-    place: '',
-    note: 'Temukan sudut baru dekat rumah.',
-  },
-];
+import { ideasForCity, ideaToWishlist } from '../domain/recommendations';
 export default function Wishlist() {
   const { snapshot, save, remove, userId, act } = useSpace();
   const [edit, setEdit] = useState<Row<'wishlist_items'> | true | null>(null),
@@ -227,7 +191,12 @@ export default function Wishlist() {
               className="btn secondary"
               onClick={() => {
                 const candidates = eligibleIdeas(
-                  [...items.map((x) => x.data), ...builtIn],
+                  [
+                    ...items.map((x) => x.data),
+                    ...ideasForCity(snapshot!.space.recommendation_city ?? 'Bandung').map((idea) =>
+                      ideaToWishlist(idea, snapshot!.space.recommendation_city ?? 'Bandung'),
+                    ),
+                  ],
                   category || null,
                   ceiling === '' ? null : Math.max(0, Number(ceiling)),
                 );

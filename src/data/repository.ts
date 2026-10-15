@@ -25,7 +25,10 @@ export interface Repository {
     links?: Links,
   ): Promise<Row<K>>;
   remove<K extends EntityName>(kind: K, row: Row<K>): Promise<void>;
-  updateSpace(old: Space, patch: Pick<Space, 'name' | 'sweet_note'>): Promise<void>;
+  updateSpace(
+    old: Space,
+    patch: Partial<Pick<Space, 'name' | 'sweet_note' | 'recommendation_city'>>,
+  ): Promise<void>;
   nickname(name: string): Promise<void>;
 }
 interface StorageLike {
@@ -114,7 +117,10 @@ export class DemoRepository implements Repository {
       s.tables.wishlist_votes = s.tables.wishlist_votes.filter((x) => x.item_id !== row.id);
     this.persist(s);
   }
-  async updateSpace(old: Space, patch: Pick<Space, 'name' | 'sweet_note'>) {
+  async updateSpace(
+    old: Space,
+    patch: Partial<Pick<Space, 'name' | 'sweet_note' | 'recommendation_city'>>,
+  ) {
     const s = await this.load();
     if (s.space.version !== old.version) throw new ConflictError();
     s.space = { ...s.space, ...patch, version: old.version + 1 };
@@ -195,7 +201,10 @@ export class CloudRepository implements Repository {
     if (r.error) throw r.error;
     if (!r.data?.length) throw new ConflictError();
   }
-  async updateSpace(old: Space, patch: Pick<Space, 'name' | 'sweet_note'>) {
+  async updateSpace(
+    old: Space,
+    patch: Partial<Pick<Space, 'name' | 'sweet_note' | 'recommendation_city'>>,
+  ) {
     const r = await this.client
       .from('spaces')
       .update(patch)

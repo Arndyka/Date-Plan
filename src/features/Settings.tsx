@@ -13,6 +13,7 @@ import { useSpace } from '../data/SpaceProvider';
 import { supabase, appUrl } from '../data/client';
 import { Heading, FormDialog, Confirm } from '../components/UI';
 import type { Space } from '../domain/types';
+import { coupleProfiles } from '../domain/couple';
 export default function Settings({ onLogout }: { onLogout: () => void }) {
   const { snapshot, demo, userId, updateSpace, nickname, toast, act } = useSpace();
   const [edit, setEdit] = useState<'space' | 'name' | null>(null),
@@ -82,6 +83,31 @@ export default function Settings({ onLogout }: { onLogout: () => void }) {
               </div>
             ))}
           </div>
+          <details className="profile-presets">
+            <summary>Nama kecil Arnold & Angel</summary>
+            <p>
+              Pilih namamu untuk profil akun ini. Nama panggilan juga bisa kamu tulis sendiri lewat
+              tombol edit.
+            </p>
+            <div className="couple-picker">
+              {coupleProfiles.map((person) => (
+                <button
+                  type="button"
+                  key={person.nickname}
+                  aria-pressed={me.nickname === person.nickname}
+                  onClick={() =>
+                    act(async () => {
+                      await nickname(person.nickname);
+                      toast('Nama panggilanmu diperbarui.');
+                    })
+                  }
+                >
+                  <strong>{person.nickname}</strong>
+                  <small>{person.fullName}</small>
+                </button>
+              ))}
+            </div>
+          </details>
         </section>
         <section className="panel">
           <UserPlus className="section-icon" />

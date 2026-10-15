@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { chromium, devices, expect } from '@playwright/test';
 
 const url = 'https://rwdwbvnunsnampznfhyv.supabase.co';
-const site = 'https://arndyka.github.io/Date-Plan/';
+const site = process.env.DATEPLAN_SITE_URL ?? 'https://arndyka.github.io/Date-Plan/';
 const publishable = process.env.DATEPLAN_PUBLIC_KEY;
 const secret = process.env.DATEPLAN_ADMIN_KEY;
 if (!publishable || !secret) throw new Error('Provide DATEPLAN_PUBLIC_KEY and DATEPLAN_ADMIN_KEY.');
@@ -226,6 +226,65 @@ try {
   });
   assert.deepEqual(errors, []);
   mark('live stale edits preserve the draft and cloud data survives reload');
+
+  await a.goto(`${site}#/ideas`);
+  await b.goto(`${site}#/ideas`);
+  for (const page of [a, b]) {
+    await expect(page.getByLabel('Kota rekomendasi')).toHaveValue('Bandung');
+    await expect(
+      page.getByRole('region', { name: 'Date minggu ini' }).getByRole('article'),
+    ).toHaveCount(6);
+  }
+  await a.getByLabel('Kota rekomendasi').fill('Yogyakarta');
+  await a.getByRole('button', { name: 'Simpan lokasi' }).click();
+  await expect(b.getByLabel('Kota rekomendasi')).toHaveValue('Yogyakarta', { timeout: 10000 });
+  await b.getByLabel('Kota rekomendasi').fill('Bogor');
+  await b.getByRole('button', { name: 'Simpan lokasi' }).click();
+  await expect(a.getByLabel('Kota rekomendasi')).toHaveValue('Bogor', { timeout: 10000 });
+  let releaseWishlist;
+  const wishlistGate = new Promise((resolve) => {
+    releaseWishlist = resolve;
+  });
+  const wishlistEndpoint = `${url}/rest/v1/wishlist_items*`;
+  await a.route(wishlistEndpoint, async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    const response = await route.fetch();
+    await wishlistGate;
+    await route.fulfill({ response });
+  });
+  try {
+    const cards = a.getByRole('region', { name: 'Pustaka ide date' }).getByRole('article');
+    await cards.first().getByRole('button', { name: 'Simpan wishlist' }).click();
+    await expect(cards.nth(1).getByRole('button', { name: 'Simpan wishlist' })).toBeDisabled();
+  } finally {
+    releaseWishlist();
+  }
+  await expect(
+    b
+      .getByRole('region', { name: 'Pustaka ide date' })
+      .getByRole('article')
+      .first()
+      .getByRole('button', { name: 'Sudah di wishlist' }),
+  ).toBeDisabled({ timeout: 10000 });
+  await expect(
+    a
+      .getByRole('region', { name: 'Pustaka ide date' })
+      .getByRole('article')
+      .first()
+      .getByRole('button', { name: 'Sudah di wishlist' }),
+  ).toBeDisabled({ timeout: 10000 });
+  await a.unroute(wishlistEndpoint);
+  assert.deepEqual(
+    await a
+      .getByRole('region', { name: 'Date minggu ini' })
+      .getByRole('heading', { level: 3 })
+      .allTextContents(),
+    await b
+      .getByRole('region', { name: 'Date minggu ini' })
+      .getByRole('heading', { level: 3 })
+      .allTextContents(),
+  );
+  mark('weekly recommendations, city preferences and saved ideas synchronize between devices');
 
   // generateLink does not send email. Exercise the actual recovery redirect with a disposable user.
   const recovery = check(

@@ -5,6 +5,7 @@ export interface PlanData {
   end: string;
   location: string;
   budget: number;
+  /** Legacy storage compatibility only; no split billing UI or calculation. */
   share: number;
   status: 'draft' | 'terjadwal' | 'selesai' | 'dibatalkan';
   note: string;
@@ -20,6 +21,7 @@ export interface ActivityData {
   category: string;
   estimate: number;
   actual: number;
+  /** Legacy storage compatibility only; new saves use zero. */
   paidFirst: number;
   position: number;
   done: boolean;
@@ -80,6 +82,7 @@ export interface Space {
   id: string;
   name: string;
   sweet_note: string;
+  recommendation_city?: string;
   created_by: string;
   version: number;
 }
@@ -114,4 +117,4 @@ export const emptyTables = (): Tables => ({
   checklist_items: [],
   memories: [],
 });
-export const categories = ['Kuliner', 'Outdoor', 'Seni', 'Santai', 'Petualangan'];
+export const categories = ['Kuliner', 'Outdoor', 'Seni', 'Santai', 'Petualangan', 'Quality time'];

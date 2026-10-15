@@ -1,5 +1,6 @@
 import {
   House,
+  Sparkles,
   CalendarDays,
   Heart,
   Bookmark,
@@ -19,6 +20,7 @@ const navigation = [
   { path: '/plans', label: 'Rencana date', icon: Heart },
   { path: '/calendar', label: 'Kalender', icon: CalendarDays },
   { path: '/inspiration', label: 'Inspirasi', icon: Bookmark },
+  { path: '/ideas', label: 'Ide date', icon: Sparkles },
   { path: '/wishlist', label: 'Wishlist', icon: MapPin },
   { path: '/memories', label: 'Kenangan', icon: BookHeart },
 ];

@@ -16,6 +16,7 @@ import { rupiah, prettyDate, jakartaInstant, today } from '../domain/logic';
 import { Heading, TextLink, Empty } from '../components/UI';
 import PicnicArt from '../components/PicnicArt';
 import { PlanEditor } from './Planner';
+import { WeeklyPreview } from './Recommendations';
 export default function Dashboard() {
   const { snapshot, save, act } = useSpace();
   const [editing, setEditing] = useState(false),
@@ -248,40 +249,7 @@ export default function Dashboard() {
           </section>
         </aside>
       </div>
-      <section className="ideas-section">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">SOMEDAY, WITH YOU</p>
-            <h2>Ide kecil untuk kita</h2>
-          </div>
-          <TextLink to="#/wishlist">Semua wishlist</TextLink>
-        </div>
-        <div className="idea-grid">
-          {tables.wishlist_items.slice(0, 3).map((w, i) => (
-            <a className={`idea-card idea-${i}`} key={w.id} href="#/wishlist">
-              <div className="idea-illustration">
-                <span>{['✿', '▤', '♡'][i]}</span>
-                <i />
-                <b>{['make something together', 'a chapter of us', 'sweet little moments'][i]}</b>
-              </div>
-              <div className="idea-info">
-                <div>
-                  <span className="tiny-label">{w.data.category}</span>
-                  <h3>{w.data.title}</h3>
-                </div>
-                <ArrowUpRight size={20} />
-              </div>
-            </a>
-          ))}
-          {!tables.wishlist_items.length && (
-            <a className="idea-card empty-idea" href="#/wishlist">
-              <Sparkles />
-              <h3>Mau mencoba apa?</h3>
-              <p>Simpan ide date pertama kalian.</p>
-            </a>
-          )}
-        </div>
-      </section>
+      <WeeklyPreview />
       <div className="tiny-bottom">
         <Heart size={13} />
         <span>{members.map((m) => m.nickname).join(' & ')} · one little memory at a time</span>

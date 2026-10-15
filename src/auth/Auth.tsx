@@ -4,6 +4,7 @@ import { supabase, appUrl } from '../data/client';
 import { useSpace } from '../data/SpaceProvider';
 import { message } from '../components/UI';
 import PicnicArt from '../components/PicnicArt';
+import { coupleName, coupleProfiles } from '../domain/couple';
 
 export function AuthScreen({
   onDemo,
@@ -61,7 +62,7 @@ export function AuthScreen({
       </div>
       <main className="welcome-grid">
         <section className="welcome-story">
-          <p className="eyebrow">FOR ALL THE LITTLE MOMENTS</p>
+          <p className="eyebrow">A LITTLE WORLD FOR {coupleName.toUpperCase()}</p>
           <h1>
             A little plan.
             <br />A lot of <em>love.</em>
@@ -200,6 +201,7 @@ export function SpaceSetup({ onLogout }: { onLogout: () => void }) {
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
   const [token, setToken] = useState(() => sessionStorage.getItem('date-invite') ?? '');
+  const [nickname, setNickname] = useState('');
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -233,14 +235,36 @@ export function SpaceSetup({ onLogout }: { onLogout: () => void }) {
         <h1>{token ? 'Ada tempat untukmu.' : 'Buat ruang kecil kalian.'}</h1>
         <p>Rencana, ide, dan cerita yang hanya bisa dilihat kalian berdua.</p>
         <form onSubmit={submit}>
+          <fieldset className="couple-picker">
+            <legend>Hari ini, siapa yang merencanakan?</legend>
+            {coupleProfiles.map((person) => (
+              <button
+                type="button"
+                key={person.nickname}
+                aria-pressed={nickname === person.nickname}
+                onClick={() => setNickname(person.nickname)}
+              >
+                <Heart size={15} />
+                <strong>{person.nickname}</strong>
+                <small>{person.fullName}</small>
+              </button>
+            ))}
+          </fieldset>
           <label>
             Nama panggilanmu
-            <input name="nickname" maxLength={40} required placeholder="Panggil aku…" />
+            <input
+              name="nickname"
+              maxLength={40}
+              required
+              placeholder="Panggil aku…"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+            />
           </label>
           {!token && (
             <label>
               Nama ruang
-              <input name="name" maxLength={80} required defaultValue="Our little world" />
+              <input name="name" maxLength={80} required defaultValue={coupleName} />
             </label>
           )}
           <label>

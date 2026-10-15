@@ -23,7 +23,10 @@ interface ContextValue {
   userId: string;
   save: Repository['save'];
   remove: Repository['remove'];
-  updateSpace: (old: Space, patch: Pick<Space, 'name' | 'sweet_note'>) => Promise<void>;
+  updateSpace: (
+    old: Space,
+    patch: Partial<Pick<Space, 'name' | 'sweet_note' | 'recommendation_city'>>,
+  ) => Promise<void>;
   nickname: (name: string) => Promise<void>;
   refresh: () => Promise<void>;
   toast: (text: string) => void;

@@ -17,15 +17,15 @@ describe('money', () => {
     for (const value of ['-1', '1.5', 'abc', '9007199254740992', ''])
       expect(() => parseRupiah(value)).toThrow();
   });
-  it('separates estimates and actual spending and allocates odd rupiah', () => {
-    expect(summarizeBudget([{ estimate: 200, actual: 101, paidFirst: 101 }], 300, 50)).toEqual({
+  it('tracks total spending without allocating costs between partners', () => {
+    expect(summarizeBudget([{ estimate: 200, actual: 101 }], 300)).toEqual({
       estimated: 200,
       actual: 101,
       remaining: 199,
-      firstOwesSecond: -51,
     });
-    expect(summarizeBudget([{ estimate: 500, actual: 0, paidFirst: 0 }], 600, 50).actual).toBe(0);
-    expect(() => summarizeBudget([{ estimate: 0, actual: 10, paidFirst: 11 }], 100, 50)).toThrow();
+    expect(summarizeBudget([{ estimate: 500, actual: 0 }], 600).actual).toBe(0);
+    expect(summarizeBudget([{ estimate: 0, actual: 110 }], 100).remaining).toBe(-10);
+    expect(() => summarizeBudget([{ estimate: 0, actual: -1 }], 100)).toThrow();
   });
 });
 describe('time and external links', () => {
