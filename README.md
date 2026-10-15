@@ -2,7 +2,7 @@
 
 A little plan, a lot of love. Date planner berbahasa Indonesia untuk dua orang, dengan tema cream–blush, ilustrasi piknik, dan animasi lembut.
 
-Website: **https://arndyka.github.io/Date-Plan/**. Deployment pertama berhasil pada 15 Oktober 2026 melalui [GitHub Actions](https://github.com/Arndyka/Date-Plan/actions/runs/38731357035). Saat ini tersedia demo lokal; sinkronisasi pasangan menunggu konfigurasi dan migrasi Supabase.
+Website: **https://arndyka.github.io/Date-Plan/**. Supabase sudah aktif: ruang pasangan, undangan, dan sinkronisasi langsung telah diuji pada website publik. SMTP Gmail sudah terhubung; email konfirmasi diterima dan tautannya berhasil memverifikasi akun uji. Demo lokal juga tersedia.
 
 ## Fitur
 
@@ -47,7 +47,7 @@ npm run test:e2e
 
 Unit/integrasi database memakai Vitest dan PGlite (PostgreSQL nyata di WASM). Browser tests memakai Playwright dengan Edge yang sudah terpasang di Windows, untuk desktop dan emulasi iPhone. Pada host selain Windows, konfigurasi otomatis memakai Chromium; siapkan dengan `npx playwright install chromium`. Untuk menguji build produksi atau URL live, set `PLAYWRIGHT_BASE_URL` ke URL lengkap yang diakhiri `/Date-Plan/` sebelum menjalankan browser tests.
 
-Pengujian RLS lokal tidak membuktikan konfigurasi Auth, Realtime, email, dan izin pada proyek Supabase produksi. Verifikasi produksi harus dilakukan setelah koneksi tersedia; lihat [catatan verifikasi](docs/verification.md).
+Pengujian produksi terpisah tersedia melalui `node tests/remote-smoke.mjs`, dengan environment `DATEPLAN_PUBLIC_KEY` dan `DATEPLAN_ADMIN_KEY`. Pengujian ini membuat tiga akun sementara dan satu ruang, memeriksa Auth/RLS/Realtime melalui API dan browser desktop/mobile, lalu menghapus data ujinya sendiri. Jalankan hanya dengan akses administrasi yang berwenang; jangan memasukkan admin key ke frontend atau Git. Tes ini tidak mengirim email. Lihat [catatan verifikasi](docs/verification.md) untuk hasil dan batas cakupannya.
 
 ## Batasan yang disengaja
 

@@ -129,9 +129,16 @@ export function SpaceProvider({
           void refresh().catch(() => {});
         },
       );
-    channel.subscribe((state) =>
-      setStatus(state === 'SUBSCRIBED' ? 'Terhubung langsung' : 'Pembaruan berkala'),
-    );
+    // Joining the channel can precede the database replication listener becoming ready.
+    // Reload at readiness to catch changes made between the initial load and subscription.
+    channel.on('system', {}, (event) => {
+      if (event.extension !== 'postgres_changes') return;
+      setStatus(event.status === 'ok' ? 'Terhubung langsung' : 'Pembaruan berkala');
+      if (event.status === 'ok') void refresh().catch(() => {});
+    });
+    channel.subscribe((state) => {
+      if (state !== 'SUBSCRIBED') setStatus('Pembaruan berkala');
+    });
     return () => {
       void supabase!.removeChannel(channel);
     };

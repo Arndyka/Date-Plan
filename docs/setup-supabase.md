@@ -21,6 +21,8 @@ URL dan publishable key saja tidak memberi izin menerapkan SQL. Gunakan koneksi 
 
 Proyek tujuan: `rwdwbvnunsnampznfhyv`. `supabase/config.toml` hanya mendeklarasikan pengaturan Auth yang dibutuhkan aplikasi, agar konfigurasi layanan lain tidak ikut ditimpa. Setelah login pemilik tersedia:
 
+Sebelum menjalankan `config diff` atau `config push`, muat `SUPABASE_SMTP_EMAIL` dan `SUPABASE_SMTP_PASS` dari file lokal yang diabaikan Git, seperti contoh PowerShell pada bagian SMTP di bawah. Password tidak disimpan langsung di TOML.
+
 ```sh
 supabase link --project-ref rwdwbvnunsnampznfhyv
 supabase db push --dry-run
@@ -30,6 +32,36 @@ supabase config push --project-ref rwdwbvnunsnampznfhyv
 ```
 
 Tinjau daftar migrasi dan diff sebelum menjalankannya. Jangan gunakan `db reset` pada proyek hosted. File `.env.local`, metadata `.temp`, dan binary alat lokal tidak dimasukkan ke Git.
+
+## SMTP Gmail
+
+SMTP produksi menggunakan `smtp.gmail.com:465` (TLS), nama pengirim **Our Little Date**, dan App Password Google. Konfirmasi email tetap aktif. Batas pengiriman Auth ditetapkan 10 email per jam, cukup untuk penggunaan dua orang; batas layanan Gmail tetap berlaku.
+
+Buat App Password khusus Date-Plan melalui [Google Account](https://myaccount.google.com/apppasswords), setelah mengaktifkan Verifikasi 2 Langkah. Simpan konfigurasi berikut di `.env.smtp.local` yang diabaikan Git, dengan nilai milik sendiri:
+
+```dotenv
+SUPABASE_SMTP_EMAIL=alamat-pengirim@gmail.com
+SUPABASE_SMTP_PASS=app_password_tanpa_spasi
+```
+
+Untuk memperbarui konfigurasi dari PowerShell:
+
+```powershell
+Get-Content -LiteralPath '.env.smtp.local' | ForEach-Object {
+  if ($_ -match '^(SUPABASE_SMTP_[A-Z]+)=(.*)$') {
+    [Environment]::SetEnvironmentVariable($matches[1], $matches[2], 'Process')
+  }
+}
+try {
+  supabase config diff --project-ref rwdwbvnunsnampznfhyv
+  # Setelah meninjau diff:
+  supabase config push --project-ref rwdwbvnunsnampznfhyv
+} finally {
+  Remove-Item Env:SUPABASE_SMTP_EMAIL,Env:SUPABASE_SMTP_PASS
+}
+```
+
+App Password hanya untuk server Auth; jangan gunakan variabel `VITE_*` atau mengunggah file tersebut ke Git. Jika App Password dicabut atau password Google diganti, perbarui kredensial SMTP sebelum mengirim email berikutnya. Panduan: [Google App Password](https://support.google.com/mail/answer/185833) dan [Supabase SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
 
 ## Pemeriksaan minimum sebelum memakai data asli
 

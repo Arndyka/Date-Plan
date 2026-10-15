@@ -12,3 +12,16 @@ minimum_password_length = 8
 [auth.email]
 enable_signup = true
 enable_confirmations = true
+
+# Load these variables from ignored .env.smtp.local before config diff/push.
+[auth.email.smtp]
+enabled = true
+host = "smtp.gmail.com"
+port = 465
+user = "env(SUPABASE_SMTP_EMAIL)"
+pass = "env(SUPABASE_SMTP_PASS)"
+admin_email = "env(SUPABASE_SMTP_EMAIL)"
+sender_name = "Our Little Date"
+
+[auth.rate_limit]
+email_sent = 10
