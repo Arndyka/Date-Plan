@@ -78,7 +78,7 @@ declare d jsonb; value text; parent uuid;
 begin
  d:=new.data;
  if tg_op='UPDATE' then
-  if new.id<>old.id or new.space_id<>old.space_id or new.author_id<>old.author_id or new.created_at<>old.created_at or new.plan_id is distinct from old.plan_id or new.item_id is distinct from old.item_id then raise exception 'Identitas record tidak dapat dipindahkan.'; end if;
+  if new.id<>old.id or new.space_id<>old.space_id or new.author_id<>old.author_id or new.created_at<>old.created_at or (tg_table_name<>'inspirations' and new.plan_id is distinct from old.plan_id) or new.item_id is distinct from old.item_id then raise exception 'Identitas record tidak dapat dipindahkan.'; end if;
   new.version:=old.version+1; new.updated_at:=now();
  else
   new.version:=1; new.created_at:=now(); new.updated_at:=now();
