@@ -15,6 +15,7 @@ import Wishlist from './features/Wishlist';
 import Memories from './features/Memories';
 import Settings from './features/Settings';
 import Recommendations from './features/Recommendations';
+import { AppUpdateNotice } from './components/InstallApp';
 
 function Workspace({ onLogout }: { onLogout: () => void }) {
   const { loading, error, snapshot, refresh, act } = useSpace();
@@ -170,6 +171,7 @@ export default function App() {
           </button>
         </p>
       )}
+      <AppUpdateNotice />
       {recovery ? (
         <AuthScreen recovery onDemo={() => {}} />
       ) : !demo && !user ? (

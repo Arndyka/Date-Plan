@@ -1,0 +1,27 @@
+{
+  "id": "./",
+  "name": "Date-Plan — Arnold & Angel",
+  "short_name": "Date-Plan",
+  "description": "Ruang kecil untuk rencana date dan kenangan Arnold & Angel.",
+  "lang": "id",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fcfaf7",
+  "theme_color": "#fcfaf7",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Rencana kita", "url": "./#/plans" },
+    { "name": "Kalender kita", "url": "./#/calendar" },
+    { "name": "Ide date", "url": "./#/ideas" }
+  ],
+  "categories": ["lifestyle", "productivity"]
+}

@@ -6,6 +6,7 @@ Website: **https://arndyka.github.io/Date-Plan/**. Supabase sudah aktif: ruang p
 
 ## Fitur
 
+- Aplikasi PWA dengan ikon layar utama, pemasangan dari Pengaturan, panduan Android/iPhone, dan pemberitahuan pembaruan yang menunggu tindakan pengguna. Lihat [cara memasang](docs/install-app.md).
 - Rencana satu atau beberapa hari, tanggal kegiatan dalam rentang rencana, perjalanan lintas malam, rundown per hari yang dapat diurutkan, lokasi dan rute Google Maps.
 - Estimasi/aktual budget, sisa anggaran untuk berdua, dan checklist, tanpa split bill.
 - Kalender menandai seluruh rentang rencana, dengan catatan, tautan Google Calendar, dan ekspor `.ics` yang mengikuti tanggal mulai–selesai.
@@ -57,7 +58,7 @@ Pengujian produksi terpisah tersedia melalui `node tests/remote-smoke.mjs`, deng
 - Google Calendar dibuka dengan isian lengkap; pengguna menekan Simpan. Perubahan berikutnya di website tidak otomatis mengubah salinan eksternal.
 - TikTok disimpan sebagai tautan. Video tidak diunduh atau diunggah ulang; tautan pendek/privat memiliki fallback buka di TikTok.
 - Maps membuka pencarian/rute tanpa Places API berbayar atau izin GPS wajib.
-- Saat offline, data yang sudah dimuat bisa dibaca dan isian formulir dipertahankan selama halaman terbuka. Penulisan cloud memerlukan koneksi.
+- Login dan sinkronisasi membutuhkan internet. Saat offline, data yang sudah dimuat bisa dibaca dan isian formulir dipertahankan selama halaman tetap terbuka; membuka atau memuat ulang aplikasi menampilkan halaman offline. Cache PWA hanya menyimpan aset tampilan, bukan respons akun atau data pasangan.
 - Satu ruang per akun, maksimal dua anggota. Tidak ada upload foto/video, transfer uang, atau pergantian pasangan melalui UI.
 - Export JSON adalah cadangan untuk diunduh; import otomatis belum tersedia.
 - Rekomendasi berputar dari koleksi terkurasi, bukan hasil pencarian acara langsung. Kota di luar Bandung mendapatkan ide umum dan pencarian Maps sesuai kota. Anggaran adalah perkiraan per date untuk berdua, bukan harga resmi tempat.

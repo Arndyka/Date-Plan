@@ -14,6 +14,7 @@ import { supabase, appUrl } from '../data/client';
 import { Heading, FormDialog, Confirm } from '../components/UI';
 import type { Space } from '../domain/types';
 import { coupleProfiles } from '../domain/couple';
+import { InstallApp } from '../components/InstallApp';
 export default function Settings({ onLogout }: { onLogout: () => void }) {
   const { snapshot, demo, userId, updateSpace, nickname, toast, act } = useSpace();
   const [edit, setEdit] = useState<'space' | 'name' | null>(null),
@@ -41,6 +42,7 @@ export default function Settings({ onLogout }: { onLogout: () => void }) {
         title="Dibuat untuk kita."
         description="Nama kecil, catatan manis, dan ruang untuk berdua."
       />
+      <InstallApp />
       <div className="settings-grid">
         <section className="panel">
           <div className="section-head">
