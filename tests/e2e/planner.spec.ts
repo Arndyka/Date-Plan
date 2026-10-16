@@ -118,7 +118,7 @@ for (const editor of [
 test('plans, activity budgets, completion and persistence', async ({ page }) => {
   await page.getByRole('button', { name: 'Buat date baru', exact: true }).first().click();
   await page.getByLabel('Judul date').fill('Museum bersama');
-  await page.getByLabel('Tanggal', { exact: true }).fill('2026-12-20');
+  await page.getByLabel('Tanggal mulai', { exact: true }).fill('2026-12-20');
   await page.getByLabel('Batas budget (Rp)').fill('300000');
   await page.getByRole('button', { name: 'Simpan rencana' }).click();
   await expect(page.getByRole('heading', { name: 'Museum bersama' })).toBeVisible();

@@ -8,6 +8,12 @@ import {
   type Snapshot,
   type Space,
 } from '../domain/types';
+import {
+  activityDates,
+  endDate,
+  validateActivityDates,
+  validatePlanDates,
+} from '../domain/schedule';
 export class ConflictError extends Error {
   constructor() {
     super(
@@ -71,6 +77,36 @@ export class DemoRepository implements Repository {
     const list = s.tables[kind] as Row<K>[];
     if (old && !list.some((x) => x.id === old.id && x.version === old.version))
       throw new ConflictError();
+    if (kind === 'plans') {
+      const planData = data as DataMap['plans'];
+      const previous = old?.data as DataMap['plans'] | undefined;
+      const children = s.tables.activities.filter((a) => a.plan_id === old?.id);
+      validatePlanDates(
+        planData,
+        children.map((a) => a.data),
+        previous,
+      );
+      // Give legacy undated activities a fixed date before their parent can move.
+      if (previous)
+        children.forEach((a) => {
+          if (!a.data.date || !a.data.endDate) {
+            a.data = { ...a.data, ...activityDates(a.data, previous) };
+            a.version += 1;
+            a.updated_at = new Date().toISOString();
+          }
+        });
+      data = { ...planData, endDate: endDate(planData) } as DataMap[K];
+    }
+    if (kind === 'activities') {
+      const parent = s.tables.plans.find((p) => p.id === (old?.plan_id || links.plan_id));
+      if (!parent) throw new ConflictError();
+      const dated = {
+        ...data,
+        ...activityDates(data as DataMap['activities'], parent.data),
+      } as DataMap['activities'];
+      validateActivityDates(dated, parent.data);
+      data = dated as DataMap[K];
+    }
     const now = new Date().toISOString();
     const row: Row<K> = {
       id: old?.id ?? crypto.randomUUID(),

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import {
   Plus,
   ArrowLeft,
@@ -24,8 +24,6 @@ import {
   today,
   prettyDate,
   rupiah,
-  jakartaInstant,
-  validateSchedule,
   parseRupiah,
   summarizeBudget,
   mapsUrl,
@@ -43,6 +41,15 @@ import {
   type FieldSpec,
 } from '../components/UI';
 import PicnicArt from '../components/PicnicArt';
+import {
+  activityDates,
+  endDate,
+  dateRangeLabel,
+  scheduleLabel,
+  schedulesOverlap,
+  validateActivityDates,
+  validatePlanDates,
+} from '../domain/schedule';
 const opts = (values: string[]) => values.map((x) => ({ value: x, label: x }));
 const deletedDraftMessage =
   'Rencana ini sudah dihapus. Salin isian yang ingin kamu simpan sebelum menutup formulir.';
@@ -75,9 +82,17 @@ export function PlanEditor({
     ...initial,
     ...editingRow?.data,
   };
+  defaults.endDate = defaults.endDate === defaults.date ? '' : defaults.endDate || '';
   const fields: FieldSpec[] = [
     { name: 'title', label: 'Judul date', required: true, wide: true },
-    { name: 'date', label: 'Tanggal', type: 'date', required: true },
+    { name: 'date', label: 'Tanggal mulai', type: 'date', required: true },
+    {
+      name: 'endDate',
+      label: 'Tanggal selesai',
+      type: 'date',
+      minField: 'date',
+      hint: 'Kosongkan jika selesai di hari yang sama.',
+    },
     { name: 'location', label: 'Area / kota' },
     { name: 'start', label: 'Jam mulai (WIB)', type: 'time', required: true },
     { name: 'end', label: 'Jam selesai (WIB)', type: 'time', required: true },
@@ -102,9 +117,15 @@ export function PlanEditor({
         if (deleted) throw new Error(deletedDraftMessage);
         const data = { ...defaults, ...v } as PlanData;
         parseRupiah(String(data.budget));
-        validateSchedule(
-          jakartaInstant(data.date, data.start),
-          jakartaInstant(data.date, data.end),
+        data.endDate = data.endDate || data.date;
+        validatePlanDates(
+          data,
+          editingRow
+            ? snapshot!.tables.activities
+                .filter((a) => a.plan_id === editingRow.id)
+                .map((a) => a.data)
+            : [],
+          editingRow?.data,
         );
         const saved = await save('plans', data, editingRow);
         onSaved?.(saved);
@@ -127,7 +148,7 @@ export function PlanCard({ plan }: { plan: Row<'plans'> }) {
       </div>
       <div className="plan-card-body">
         <p className="eyebrow">
-          {prettyDate(plan.data.date, true)} · {plan.data.start} WIB
+          {dateRangeLabel(plan.data)} · {plan.data.start} WIB
         </p>
         <h3>{plan.data.title}</h3>
         <p>
@@ -214,8 +235,9 @@ function ActivityEditor({
   const count = snapshot!.tables.activities.filter((x) => x.plan_id === plan.id).length;
   const initial: ActivityData = {
     title: '',
-    start: plan.data.start,
-    end: plan.data.end,
+    date: plan.data.date,
+    start: '09:00',
+    end: '10:00',
     place: '',
     address: '',
     maps: '',
@@ -228,8 +250,27 @@ function ActivityEditor({
     note: '',
     ...row?.data,
   };
+  initial.date ||= plan.data.date;
+  initial.endDate = initial.endDate === initial.date ? '' : initial.endDate || '';
   const fields: FieldSpec[] = [
     { name: 'title', label: 'Nama kegiatan', required: true, wide: true },
+    {
+      name: 'date',
+      label: 'Tanggal kegiatan',
+      type: 'date',
+      required: true,
+      min: plan.data.date,
+      max: endDate(plan.data),
+    },
+    {
+      name: 'endDate',
+      label: 'Tanggal selesai kegiatan',
+      type: 'date',
+      min: plan.data.date,
+      minField: 'date',
+      max: endDate(plan.data),
+      hint: 'Isi jika kegiatan melewati tengah malam.',
+    },
     { name: 'start', label: 'Mulai (WIB)', type: 'time', required: true },
     { name: 'end', label: 'Selesai (WIB)', type: 'time', required: true },
     { name: 'place', label: 'Nama tempat' },
@@ -250,10 +291,8 @@ function ActivityEditor({
       onSubmit={async (v) => {
         if (deleted) throw new Error(deletedDraftMessage);
         const data = { ...initial, ...v } as ActivityData;
-        validateSchedule(
-          jakartaInstant(plan.data.date, data.start),
-          jakartaInstant(plan.data.date, data.end),
-        );
+        data.endDate = data.endDate || data.date;
+        validateActivityDates(data, plan.data);
         // Legacy payload field remains for older server/client compatibility.
         data.paidFirst = 0;
         summarizeBudget([data], plan.data.budget);
@@ -262,6 +301,9 @@ function ActivityEditor({
         await save('activities', data, row, { plan_id: plan.id });
       }}
     >
+      <p className="info-note">
+        Pilih tanggal dalam rentang {dateRangeLabel(plan.data)}. Jam menggunakan WIB.
+      </p>
       {deleted && <p className="info-note">{deletedDraftMessage}</p>}
     </FormDialog>
   );
@@ -306,7 +348,10 @@ export function PlanDetail({ id }: { id: string }) {
     activities = snapshot!.tables.activities
       .filter((x) => x.plan_id === id)
       .sort(
-        (a, b) => a.data.position - b.data.position || a.created_at.localeCompare(b.created_at),
+        (a, b) =>
+          (a.data.date || p.date).localeCompare(b.data.date || p.date) ||
+          a.data.position - b.data.position ||
+          a.created_at.localeCompare(b.created_at),
       ),
     checks = snapshot!.tables.checklist_items.filter((x) => x.plan_id === id),
     money = summarizeBudget(
@@ -315,7 +360,7 @@ export function PlanDetail({ id }: { id: string }) {
     ),
     cal = { ...p, id };
   const overlap = activities.some((a, i) =>
-    activities.some((b, j) => i < j && a.data.start < b.data.end && b.data.start < a.data.end),
+    activities.some((b, j) => i < j && schedulesOverlap(a.data, b.data, p)),
   );
   function download() {
     const url = URL.createObjectURL(
@@ -329,17 +374,22 @@ export function PlanDetail({ id }: { id: string }) {
   }
   function reorder(i: number, direction: -1 | 1) {
     const row = activities[i];
+    const dayItems = activities.filter(
+      (a) => (a.data.date || p.date) === (row.data.date || p.date),
+    );
+    const index = dayItems.findIndex((a) => a.id === row.id);
+    if (!dayItems[index + direction]) return;
     let position: number;
     if (direction < 0)
       position =
-        i === 1
-          ? activities[0].data.position - 1
-          : (activities[i - 2].data.position + activities[i - 1].data.position) / 2;
+        index === 1
+          ? dayItems[0].data.position - 1
+          : (dayItems[index - 2].data.position + dayItems[index - 1].data.position) / 2;
     else
       position =
-        i === activities.length - 2
-          ? activities[i + 1].data.position + 1
-          : (activities[i + 1].data.position + activities[i + 2].data.position) / 2;
+        index === dayItems.length - 2
+          ? dayItems[index + 1].data.position + 1
+          : (dayItems[index + 1].data.position + dayItems[index + 2].data.position) / 2;
     act(() => save('activities', { ...row.data, position }, row));
   }
   return (
@@ -352,7 +402,7 @@ export function PlanDetail({ id }: { id: string }) {
         <Heading
           eyebrow="OUR LITTLE ITINERARY"
           title={p.title}
-          description={`${prettyDate(p.date)} · ${p.start}–${p.end} WIB`}
+          description={scheduleLabel(p)}
           action={
             <div className="actions">
               <button className="btn secondary" onClick={() => setEdit(true)}>
@@ -436,88 +486,109 @@ export function PlanDetail({ id }: { id: string }) {
             {activities.length ? (
               <div className="timeline">
                 {activities.map((a, i) => (
-                  <article className={`timeline-item ${a.data.done ? 'done' : ''}`} key={a.id}>
-                    <div className="timeline-time">
-                      {a.data.start}
-                      <small>{a.data.end}</small>
-                    </div>
-                    <div className="timeline-mark">
-                      <Coffee size={17} />
-                    </div>
-                    <div className="timeline-body">
-                      <div className="row-between">
-                        <span className="tiny-label">{a.data.category}</span>
-                        <div className="actions">
-                          <button
-                            className="icon-btn"
-                            disabled={i === 0}
-                            aria-label={`Naikkan ${a.data.title}`}
-                            onClick={() => reorder(i, -1)}
+                  <Fragment key={a.id}>
+                    {(i === 0 ||
+                      (activities[i - 1].data.date || p.date) !== (a.data.date || p.date)) && (
+                      <h3 className="rundown-day">
+                        <CalendarDays size={17} />
+                        {prettyDate(a.data.date || p.date)}
+                      </h3>
+                    )}
+                    <article className={`timeline-item ${a.data.done ? 'done' : ''}`} key={a.id}>
+                      <div className="timeline-time">
+                        {a.data.start}
+                        <small>{a.data.end}</small>
+                        {endDate(activityDates(a.data, p)) !== (a.data.date || p.date) && (
+                          <small>
+                            sampai {prettyDate(endDate(activityDates(a.data, p)), true)}
+                          </small>
+                        )}
+                      </div>
+                      <div className="timeline-mark">
+                        <Coffee size={17} />
+                      </div>
+                      <div className="timeline-body">
+                        <div className="row-between">
+                          <span className="tiny-label">{a.data.category}</span>
+                          <div className="actions">
+                            <button
+                              className="icon-btn"
+                              disabled={
+                                i === 0 ||
+                                (activities[i - 1].data.date || p.date) !== (a.data.date || p.date)
+                              }
+                              aria-label={`Naikkan ${a.data.title}`}
+                              onClick={() => reorder(i, -1)}
+                            >
+                              <ArrowUp size={14} />
+                            </button>
+                            <button
+                              className="icon-btn"
+                              disabled={
+                                i === activities.length - 1 ||
+                                (activities[i + 1].data.date || p.date) !== (a.data.date || p.date)
+                              }
+                              aria-label={`Turunkan ${a.data.title}`}
+                              onClick={() => reorder(i, 1)}
+                            >
+                              <ArrowDown size={14} />
+                            </button>
+                            <button
+                              className="icon-btn"
+                              aria-label={`Edit ${a.data.title}`}
+                              onClick={() => setActivity(a)}
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              className="icon-btn"
+                              aria-label={`Hapus ${a.data.title}`}
+                              onClick={() => setDeleting({ kind: 'activities', row: a })}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                        <h3>{a.data.title}</h3>
+                        {(a.data.place || a.data.address) && (
+                          <External
+                            className="place-link"
+                            href={
+                              safeMapsUrl(a.data.maps) ??
+                              mapsUrl(`${a.data.place} ${a.data.address}`)
+                            }
                           >
-                            <ArrowUp size={14} />
-                          </button>
+                            <MapPin size={13} />
+                            {a.data.place || a.data.address}
+                            <ExternalLink size={12} />
+                          </External>
+                        )}
+                        <p>{a.data.note}</p>
+                        <div className="row-between">
+                          <span className="cost">
+                            {rupiah(a.data.estimate)} <small>estimasi</small>
+                          </span>
                           <button
-                            className="icon-btn"
-                            disabled={i === activities.length - 1}
-                            aria-label={`Turunkan ${a.data.title}`}
-                            onClick={() => reorder(i, 1)}
+                            className={`check-pill ${a.data.done ? 'checked' : ''}`}
+                            onClick={() =>
+                              act(() => save('activities', { ...a.data, done: !a.data.done }, a))
+                            }
                           >
-                            <ArrowDown size={14} />
-                          </button>
-                          <button
-                            className="icon-btn"
-                            aria-label={`Edit ${a.data.title}`}
-                            onClick={() => setActivity(a)}
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            className="icon-btn"
-                            aria-label={`Hapus ${a.data.title}`}
-                            onClick={() => setDeleting({ kind: 'activities', row: a })}
-                          >
-                            <Trash2 size={14} />
+                            <Check size={13} />
+                            {a.data.done ? 'Selesai' : 'Tandai selesai'}
                           </button>
                         </div>
+                        {(a.data.place || a.data.address) && (
+                          <External
+                            className="tiny-link"
+                            href={mapsUrl(`${a.data.place} ${a.data.address}`, true)}
+                          >
+                            Buka rute →
+                          </External>
+                        )}
                       </div>
-                      <h3>{a.data.title}</h3>
-                      {(a.data.place || a.data.address) && (
-                        <External
-                          className="place-link"
-                          href={
-                            safeMapsUrl(a.data.maps) ?? mapsUrl(`${a.data.place} ${a.data.address}`)
-                          }
-                        >
-                          <MapPin size={13} />
-                          {a.data.place || a.data.address}
-                          <ExternalLink size={12} />
-                        </External>
-                      )}
-                      <p>{a.data.note}</p>
-                      <div className="row-between">
-                        <span className="cost">
-                          {rupiah(a.data.estimate)} <small>estimasi</small>
-                        </span>
-                        <button
-                          className={`check-pill ${a.data.done ? 'checked' : ''}`}
-                          onClick={() =>
-                            act(() => save('activities', { ...a.data, done: !a.data.done }, a))
-                          }
-                        >
-                          <Check size={13} />
-                          {a.data.done ? 'Selesai' : 'Tandai selesai'}
-                        </button>
-                      </div>
-                      {(a.data.place || a.data.address) && (
-                        <External
-                          className="tiny-link"
-                          href={mapsUrl(`${a.data.place} ${a.data.address}`, true)}
-                        >
-                          Buka rute →
-                        </External>
-                      )}
-                    </div>
-                  </article>
+                    </article>
+                  </Fragment>
                 ))}
               </div>
             ) : (

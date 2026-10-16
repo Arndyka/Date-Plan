@@ -6,9 +6,9 @@ Website: **https://arndyka.github.io/Date-Plan/**. Supabase sudah aktif: ruang p
 
 ## Fitur
 
-- Rencana date, rundown yang dapat diurutkan, lokasi dan rute Google Maps.
+- Rencana satu atau beberapa hari, tanggal kegiatan dalam rentang rencana, perjalanan lintas malam, rundown per hari yang dapat diurutkan, lokasi dan rute Google Maps.
 - Estimasi/aktual budget, sisa anggaran untuk berdua, dan checklist, tanpa split bill.
-- Kalender dengan catatan, tautan Google Calendar, dan ekspor `.ics`.
+- Kalender menandai seluruh rentang rencana, dengan catatan, tautan Google Calendar, dan ekspor `.ics` yang mengikuti tanggal mulai–selesai.
 - Papan inspirasi TikTok: tautan, pemutar opsional, kategori, catatan, dan kaitan ke rencana.
 - Wishlist dengan vote, acak ide berdasarkan kategori/budget, dan jurnal date selesai.
 - Enam rekomendasi berganti setiap Senin (WIB), dengan kota bersama yang dapat diubah; default Bandung.

@@ -116,8 +116,9 @@ export interface FieldSpec {
   required?: boolean;
   options?: { value: string; label: string }[];
   hint?: string;
-  max?: number;
-  min?: number;
+  max?: number | string;
+  min?: number | string;
+  minField?: string;
   wide?: boolean;
 }
 export function FormDialog({
@@ -139,6 +140,8 @@ export function FormDialog({
 }) {
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
+  const [values, setValues] = useState(initial);
+  const formId = useId();
   async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
@@ -190,16 +193,29 @@ export function FormDialog({
               ) : (
                 <input
                   name={f.name}
+                  aria-label={f.label}
+                  aria-describedby={f.hint ? `${formId}-${f.name}-hint` : undefined}
                   type={f.type ?? 'text'}
                   required={f.required}
-                  min={f.type === 'number' ? (f.min ?? 0) : undefined}
+                  min={
+                    f.minField
+                      ? String(values[f.minField] || f.min || '')
+                      : (f.min ?? (f.type === 'number' ? 0 : undefined))
+                  }
                   max={f.max ?? (f.type === 'number' ? 1000000000000 : undefined)}
                   step={f.type === 'number' ? 1 : undefined}
                   maxLength={f.type === 'url' ? 2000 : 160}
                   defaultValue={String(initial[f.name] ?? '')}
+                  onChange={(e) => {
+                    if (f.type === 'date') setValues((v) => ({ ...v, [f.name]: e.target.value }));
+                  }}
                 />
               )}{' '}
-              {f.hint && <small className="muted">{f.hint}</small>}
+              {f.hint && (
+                <small id={`${formId}-${f.name}-hint`} className="muted">
+                  {f.hint}
+                </small>
+              )}
             </label>
           ))}
         </div>

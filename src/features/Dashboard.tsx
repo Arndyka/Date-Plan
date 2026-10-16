@@ -17,6 +17,7 @@ import { Heading, TextLink, Empty } from '../components/UI';
 import PicnicArt from '../components/PicnicArt';
 import { PlanEditor } from './Planner';
 import { WeeklyPreview } from './Recommendations';
+import { endDate, dateRangeLabel } from '../domain/schedule';
 export default function Dashboard() {
   const { snapshot, save, act } = useSpace();
   const [editing, setEditing] = useState(false),
@@ -30,14 +31,18 @@ export default function Dashboard() {
     .filter(
       (x) =>
         x.data.status === 'terjadwal' &&
-        new Date(jakartaInstant(x.data.date, x.data.end)).getTime() > now,
+        new Date(jakartaInstant(endDate(x.data), x.data.end)).getTime() > now,
     )
     .sort((a, b) => `${a.data.date}${a.data.start}`.localeCompare(`${b.data.date}${b.data.start}`));
   const next = planned[0];
   const activities = next
     ? tables.activities
         .filter((x) => x.plan_id === next.id)
-        .sort((a, b) => a.data.position - b.data.position)
+        .sort(
+          (a, b) =>
+            (a.data.date || next.data.date).localeCompare(b.data.date || next.data.date) ||
+            a.data.position - b.data.position,
+        )
     : [];
   const checks = next ? tables.checklist_items.filter((x) => x.plan_id === next.id) : [];
   const seconds = next
@@ -92,7 +97,7 @@ export default function Dashboard() {
             <div className="hero-meta">
               <span>
                 <CalendarDays size={14} />
-                {prettyDate(next.data.date)}
+                {dateRangeLabel(next.data)}
               </span>
               <span>
                 <MapPin size={14} />
@@ -187,7 +192,7 @@ export default function Dashboard() {
                 <a href={`#/plans/${next.id}`} key={a.id}>
                   <span className="agenda-time">
                     {a.data.start}
-                    <small>WIB</small>
+                    <small>{prettyDate(a.data.date || next.data.date, true)} · WIB</small>
                   </span>
                   <span className={`agenda-icon agenda-${i}`}>
                     <span>{['☕', '✿', '♡'][i]}</span>

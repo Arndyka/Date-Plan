@@ -86,6 +86,7 @@ interface CalendarPlan {
   id: string;
   title: string;
   date: string;
+  endDate?: string;
   start: string;
   end: string;
   note: string;
@@ -113,7 +114,7 @@ function fold(line: string): string {
 }
 export function calendarIcs(plan: CalendarPlan): string {
   const start = jakartaInstant(plan.date, plan.start),
-    end = jakartaInstant(plan.date, plan.end);
+    end = jakartaInstant(plan.endDate || plan.date, plan.end);
   validateSchedule(start, end);
   return [
     'BEGIN:VCALENDAR',
@@ -137,7 +138,7 @@ export function calendarIcs(plan: CalendarPlan): string {
 }
 export function googleCalendarUrl(plan: CalendarPlan): string {
   const start = jakartaInstant(plan.date, plan.start),
-    end = jakartaInstant(plan.date, plan.end);
+    end = jakartaInstant(plan.endDate || plan.date, plan.end);
   validateSchedule(start, end);
   return (
     'https://calendar.google.com/calendar/render?' +

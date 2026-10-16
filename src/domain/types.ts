@@ -1,6 +1,7 @@
 export interface PlanData {
   title: string;
   date: string;
+  endDate?: string;
   start: string;
   end: string;
   location: string;
@@ -13,6 +14,8 @@ export interface PlanData {
 }
 export interface ActivityData {
   title: string;
+  date?: string;
+  endDate?: string;
   start: string;
   end: string;
   place: string;

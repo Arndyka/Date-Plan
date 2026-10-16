@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Heart, Star, Plus } from 'lucide-react';
 import { useSpace } from '../data/SpaceProvider';
 import { type Row } from '../domain/types';
-import { prettyDate } from '../domain/logic';
+import { dateRangeLabel } from '../domain/schedule';
 import { Heading, Empty, FormDialog, Confirm, EditButtons } from '../components/UI';
 export default function Memories() {
   const { snapshot, userId, save, remove } = useSpace();
@@ -24,7 +24,7 @@ export default function Memories() {
               own = notes.find((n) => n.author_id === userId);
             return (
               <section className="panel memory-group" key={p.id}>
-                <p className="eyebrow">{prettyDate(p.data.date)}</p>
+                <p className="eyebrow">{dateRangeLabel(p.data)}</p>
                 <h2>{p.data.title}</h2>
                 <div className="memory-notes">
                   {notes.map((n) => (

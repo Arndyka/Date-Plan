@@ -253,4 +253,89 @@ describe('actual PostgreSQL access policies and RPCs', () => {
     await as(b);
     await expect(rows('select accept_invite($1,$2)', [revoked, 'B'])).rejects.toThrow();
   });
+  it('enforces multi-day dates, legacy defaults and child bounds at the database', async () => {
+    await as(a);
+    const trip = (
+      await rows('insert into plans(space_id,data) values($1,$2) returning *', [
+        room,
+        {
+          title: 'Bandung weekend',
+          date: '2026-10-23',
+          endDate: '2026-10-25',
+          start: '23:00',
+          end: '18:00',
+          budget: 1000000,
+          share: 50,
+          status: 'terjadwal',
+        },
+      ])
+    )[0];
+    const activity = {
+      title: 'Kereta malam',
+      date: '2026-10-23',
+      endDate: '2026-10-24',
+      start: '23:30',
+      end: '02:00',
+      estimate: 0,
+      actual: 0,
+      paidFirst: 0,
+    };
+    const child = (
+      await rows('insert into activities(space_id,plan_id,data) values($1,$2,$3) returning *', [
+        room,
+        trip.id,
+        activity,
+      ])
+    )[0];
+    await expect(
+      rows('update activities set data=$1 where id=$2', [
+        { ...activity, date: '2026-10-22' },
+        child.id,
+      ]),
+    ).rejects.toThrow(/rentang/);
+    await expect(
+      rows('update activities set data=$1 where id=$2', [
+        { ...activity, endDate: '2026-10-26' },
+        child.id,
+      ]),
+    ).rejects.toThrow(/rentang/);
+    await expect(
+      rows('update plans set data=$1 where id=$2', [{ ...trip.data, date: '2026-10-24' }, trip.id]),
+    ).rejects.toThrow(/kegiatan/);
+    await expect(
+      rows('update plans set data=$1 where id=$2', [
+        { ...trip.data, endDate: '2026-02-30' },
+        trip.id,
+      ]),
+    ).rejects.toThrow();
+    await expect(
+      rows('update activities set data=$1 where id=$2', [
+        { ...activity, endDate: activity.date },
+        child.id,
+      ]),
+    ).rejects.toThrow();
+    // Older clients may not send the new keys on updates: preserve stored dates.
+    const { date: _date, endDate: _end, ...oldActivity } = activity;
+    expect(
+      (
+        await rows('update activities set data=$1 where id=$2 returning data', [
+          oldActivity,
+          child.id,
+        ])
+      )[0].data.date,
+    ).toBe(activity.date);
+    expect(
+      (await rows('select data from activities where id=$1', [child.id]))[0].data.endDate,
+    ).toBe(activity.endDate);
+    const legacy = (
+      await rows('insert into activities(space_id,plan_id,data) values($1,$2,$3) returning data', [
+        room,
+        trip.id,
+        { ...oldActivity, start: '10:00', end: '11:00' },
+      ])
+    )[0].data;
+    expect(legacy.date).toBe('2026-10-23');
+    expect(legacy.endDate).toBe(legacy.date);
+    await rows('delete from plans where id=$1', [trip.id]);
+  });
 });

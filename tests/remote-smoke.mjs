@@ -191,7 +191,10 @@ try {
   const title = `Browser QA ${run.slice(0, 8)}`;
   await a.getByRole('button', { name: 'Buat date baru', exact: true }).first().click();
   await a.getByLabel('Judul date').fill(title);
-  await a.getByLabel('Tanggal', { exact: true }).fill('2026-12-21');
+  await a.getByLabel('Tanggal mulai', { exact: true }).fill('2026-12-21');
+  await a.getByLabel('Tanggal selesai', { exact: true }).fill('2026-12-23');
+  await a.getByLabel('Jam mulai (WIB)', { exact: true }).fill('23:00');
+  await a.getByLabel('Jam selesai (WIB)', { exact: true }).fill('18:00');
   await a.getByLabel('Batas budget (Rp)').fill('250000');
   await a.getByRole('button', { name: 'Simpan rencana' }).click();
   await expect(a.getByRole('heading', { name: title, exact: true })).toBeVisible({
@@ -226,6 +229,67 @@ try {
   });
   assert.deepEqual(errors, []);
   mark('live stale edits preserve the draft and cloud data survives reload');
+
+  await a.bringToFront();
+  await a.getByRole('button', { name: 'Tambah kegiatan', exact: true }).click();
+  await a.getByLabel('Nama kegiatan').fill('Perjalanan lintas malam');
+  await a.getByLabel('Tanggal kegiatan', { exact: true }).fill('2026-12-22');
+  await a.getByLabel('Tanggal selesai kegiatan', { exact: true }).fill('2026-12-23');
+  await a.getByLabel('Mulai (WIB)', { exact: true }).fill('23:30');
+  await a.getByLabel('Selesai (WIB)', { exact: true }).fill('02:00');
+  await a.getByRole('button', { name: 'Simpan kegiatan' }).click();
+  await expect(a.getByRole('dialog')).toHaveCount(0);
+  await expect(
+    b.getByRole('heading', { name: 'Perjalanan lintas malam', exact: true }),
+  ).toBeVisible({ timeout: 10000 });
+  await b.bringToFront();
+  await b.getByRole('button', { name: 'Edit rencana', exact: true }).click();
+  await b.getByLabel('Tanggal selesai', { exact: true }).fill('2026-12-22');
+  await b.getByRole('button', { name: 'Simpan rencana', exact: true }).click();
+  await expect(b.getByRole('alert')).toContainText('kegiatan di luar rentang');
+  await b.keyboard.press('Escape');
+  const racePlan = check(
+    await clients[0]
+      .from('plans')
+      .insert({ space_id: room, data: { ...planData, endDate: '2026-12-23' } })
+      .select()
+      .single(),
+  );
+  const raceActivity = {
+    title: 'Range race',
+    date: '2026-12-23',
+    endDate: '2026-12-23',
+    start: '09:00',
+    end: '10:00',
+    estimate: 0,
+    actual: 0,
+    paidFirst: 0,
+  };
+  const racing = await Promise.all([
+    clients[0]
+      .from('plans')
+      .update({ data: { ...racePlan.data, endDate: '2026-12-22' } })
+      .eq('id', racePlan.id)
+      .select(),
+    partner
+      .from('activities')
+      .insert({ space_id: room, plan_id: racePlan.id, data: raceActivity })
+      .select(),
+  ]);
+  assert.equal(racing.filter((result) => result.error).length, 1);
+  const finalRange = check(
+    await clients[0].from('plans').select('data').eq('id', racePlan.id).single(),
+  ).data;
+  const finalChildren = check(
+    await partner.from('activities').select('data').eq('plan_id', racePlan.id),
+  );
+  assert.ok(
+    finalChildren.every(
+      (child) => child.data.date >= finalRange.date && child.data.endDate <= finalRange.endDate,
+    ),
+  );
+  check(await clients[0].from('plans').delete().eq('id', racePlan.id));
+  mark('multi-day and overnight activities sync; concurrent range edits cannot orphan activities');
 
   await a.goto(`${site}#/ideas`);
   await b.goto(`${site}#/ideas`);

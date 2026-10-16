@@ -11,6 +11,23 @@ const storage = () => {
   };
 };
 describe('demo repository integrity', () => {
+  it('backfilling legacy activity dates invalidates drafts instead of moving their day', async () => {
+    const repo = new DemoRepository(storage(), makeDemo());
+    const snap = await repo.load();
+    const plan = snap.tables.plans[0],
+      child = snap.tables.activities[0];
+    const earlier = new Date(`${plan.data.date}T00:00:00Z`);
+    earlier.setUTCDate(earlier.getUTCDate() - 1);
+    await repo.save(
+      'plans',
+      { ...plan.data, date: earlier.toISOString().slice(0, 10), endDate: plan.data.date },
+      plan,
+    );
+    await expect(
+      repo.save('activities', { ...child.data, done: true }, child),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect((await repo.load()).tables.activities[0].data.date).toBe(plan.data.date);
+  });
   it('persists records and refuses stale updates or deletion', async () => {
     const store = storage(),
       repo = new DemoRepository(store, makeDemo());

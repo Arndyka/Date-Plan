@@ -3,6 +3,7 @@ import { Plus, ChevronLeft, ChevronRight, CalendarDays, Heart, StickyNote } from
 import { useSpace } from '../data/SpaceProvider';
 import { today, prettyDate, jakartaInstant } from '../domain/logic';
 import { type Row } from '../domain/types';
+import { dateInPlan, scheduleLabel } from '../domain/schedule';
 import { Heading, FormDialog, Confirm, EditButtons, Empty } from '../components/UI';
 export default function Calendar() {
   const { snapshot, save, remove } = useSpace();
@@ -15,7 +16,7 @@ export default function Calendar() {
     days = new Date(Date.UTC(year, mon, 0)).getUTCDate();
   const plans = snapshot!.tables.plans.filter((p) => p.data.status !== 'dibatalkan'),
     notes = snapshot!.tables.calendar_notes;
-  const selectedPlans = plans.filter((x) => x.data.date === selected),
+  const selectedPlans = plans.filter((x) => dateInPlan(selected, x.data)),
     selectedNotes = notes.filter((x) => x.data.date === selected);
   function shift(offset: number) {
     const d = new Date(Date.UTC(year, mon - 1 + offset, 1));
@@ -75,7 +76,7 @@ export default function Calendar() {
             ))}
             {Array.from({ length: days }, (_, i) => {
               const date = `${month}-${String(i + 1).padStart(2, '0')}`,
-                dayPlans = plans.filter((p) => p.data.date === date),
+                dayPlans = plans.filter((p) => dateInPlan(date, p.data)),
                 dayNotes = notes.filter((n) => n.data.date === date);
               return (
                 <button
@@ -130,9 +131,7 @@ export default function Calendar() {
               <Heart size={17} />
               <div>
                 <h3>{p.data.title}</h3>
-                <p>
-                  {p.data.start}–{p.data.end} WIB
-                </p>
+                <p>{scheduleLabel(p.data)}</p>
               </div>
             </a>
           ))}
